@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Command Line Interface Handler (Clap-style).
-
-A beautifully formatted, colorized CLI for managing the FastAPI server
-and running the TUI assistant. Inspired by Rust's `clap` library.
-"""
-
 import sys
 import subprocess
 import asyncio
@@ -88,8 +82,36 @@ def help() -> None:
   )
 
 
+async def _direct_query(prompt: str) -> None:
+  """Handle direct prompt input."""
+  console.print(Panel.fit(f"[bold white]Prompt:[/bold white] {prompt}", title="Prompt", border_style="cyan"))
+  # Example: integrate your assistant here
+  try:
+    from ..mcp.client import MCPClient
+    mcp_client = MCPClient()
+    await mcp_client.connect_to_server(
+      str(ConstantConfig.MCP_SERVER_PATH)
+    )
+    response = await mcp_client.query(prompt)
+    if response and len(response) > 0:
+      ai_response = response[-1].get('content', 'No response content available.')
+      print(ai_response)
+    else:
+      print("No response received from the assistant.")
+  except ImportError:
+    console.print("[yellow]No prompt handler found — implement handle_prompt() to process the input.[/yellow]")
+  except KeyboardInterrupt:
+    exit(1)
+  except Exception as e:
+    # logger.error(e)
+    print(e)
+
+
 def run_cli() -> None:
   """Main entry point for CLI execution."""
+  if len(sys.argv) > 1 and sys.argv[1] not in ["serve", "tui", "help"]:
+    asyncio.run(_direct_query(" ".join(sys.argv[1:])))
+    return
   try:
     app()
   except KeyboardInterrupt:
