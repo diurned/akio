@@ -4,6 +4,7 @@
 
 from typing import Tuple
 import os
+import hashlib
 from ..tools.rag import RAG
 from ...config.constants import ConstantConfig
 
@@ -68,3 +69,32 @@ def create_vdb_if_needed() -> None:
     print("Vector store ready.")
   else:
     print(f"Loaded existing vector DB with {rag.collection.count()} entries.")
+
+
+def hash_folder(path: str) -> str:
+  """
+  Return a hash representing the current state of a folder.
+
+  Args:
+    path (str): The path to the folder to check.
+
+  Returns:
+    str: The folder's hash.
+
+  Raises:
+    ValueError: If path is not a directory.
+  """
+  if not os.path.isdir(path):
+    raise ValueError(f"The path {path} is not a directory.")
+  hasher = hashlib.sha256()
+  for root, dirs, files in os.walk(path):
+    for name in sorted(files):
+      filepath = os.path.join(root, name)
+      try:
+        stat = os.stat(filepath)
+      except FileNotFoundError:
+        continue
+      hasher.update(name.encode())
+      hasher.update(str(stat.st_mtime).encode())
+      hasher.update(str(stat.st_size).encode())
+  return hasher.hexdigest()

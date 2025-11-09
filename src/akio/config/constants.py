@@ -46,6 +46,9 @@ class ConstantConfig:
   # Datasets path
   DATASETS_PATH: str = AKIO_CONFIG_PATH / "datasets"
 
+  # Datasets hash file
+  DATASETS_HASH_FILE: str = AKIO_CONFIG_PATH / ".datasets_hash"
+
   # LLM system prompt path
   SYSTEM_PROMPT_PATH: str = AKIO_CONFIG_PATH / "knowledge/prompt.txt"
 
