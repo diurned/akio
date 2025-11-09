@@ -1,6 +1,6 @@
 [project]
 name = "akio"
-version = "0.0.1.dev0"
+version = "0.0.2.dev0"
 description = "An agentic AI for red team tasks."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -56,6 +56,13 @@ documentation = "https://fastiraz.github.io/grimoire/"
 [build-system]
 requires = ["uv_build >= 0.7.19, <0.9.0"]
 build-backend = "uv_build"
+
+[tool.uv_build]
+package-dir = { "akio" = "src/akio" }
+include = [
+    "src/akio/**",
+    "src/akio/**/*.py"
+]
 
 [tool.ruff]
 line-length = 80

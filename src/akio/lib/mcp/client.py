@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 import logging
 from typing import Optional, Any
 from contextlib import AsyncExitStack
@@ -36,10 +37,12 @@ class MCPClient:
       server_script_path: Path to the server script (.py or .js)
     """
     is_python = server_script_path.endswith('.py')
-    is_js = server_script_path.endswith('.js')
-    if not (is_python or is_js):
-      raise ValueError("Server script must be a .py or .js file")
-    command = "python" if is_python else "node"
+    is_bun = server_script_path.endswith('.js') or server_script_path.endswith('.ts')
+    if not (is_python or is_bun):
+      raise ValueError("Server script must be a .py, .ts or .js file")
+    # Use sys.executable to ensure we use the same Python interpreter
+    # that's running the current process (important for pipx/venv installations)
+    command = sys.executable if is_python else "bun"
     server_params = StdioServerParameters(
       command=command,
       args=[server_script_path],
@@ -52,7 +55,7 @@ class MCPClient:
     response = await self.session.list_tools()
     self.tools = self._convert_tools(response.tools)
 
-  def _convert_tools(self, tools):
+  def _convert_tools(self, tools) -> list | None:
     """
     Convert MCP tools into Ollama Tool objects.
     Returns a list of ollama.Tool instances with proper Parameters.Property wrapping.
@@ -102,9 +105,16 @@ class MCPClient:
         tools=self.tools,
         stream=False
       )
-      self.messages.append(response.message)
-      logger.info(f"\nDBG Response -> {response.message}")
-      logger.info(f"\nDBG Tools -> {self.tools}")
+      # Convert Ollama Message to dict format for consistency
+      message_dict = {
+        'role': response.message.role,
+        'content': response.message.content or ''
+      }
+      if hasattr(response.message, 'tool_calls') and response.message.tool_calls:
+        message_dict['tool_calls'] = response.message.tool_calls
+      self.messages.append(message_dict)
+      logger.debug(f"\n{response.message}")
+      logger.debug(f"\n{self.tools}")
       if response.message.tool_calls:
         logger.info(f"\n--- Processing {len(response.message.tool_calls)} tool call(s) ---")
         for tool in response.message.tool_calls:

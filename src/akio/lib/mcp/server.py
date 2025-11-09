@@ -2,17 +2,32 @@
 # -*- coding: utf-8 -*-
 
 
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent))
+try:
+  import sys
+  from pathlib import Path
+  sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from mcp.server.fastmcp import FastMCP
-from akio.lib.tools.shell import shell_tool, hacking_tool
-from akio.lib.tools.rag import RAG
-from akio.lib.tools.browser import web_browser_tool
-from akio.lib.tools.message import ask_user_tool
-from akio.lib.tools.web_search import ddg_search
-from akio.lib.tools.code import read_file, write_file
+  from mcp.server.fastmcp import FastMCP
+  from akio.lib.tools.shell import shell_tool, hacking_tool
+  from akio.lib.tools.rag import RAG
+  from akio.lib.tools.browser import web_browser_tool
+  from akio.lib.tools.message import ask_user_tool
+  from akio.lib.tools.web_search import ddg_search
+  from akio.lib.tools.code import read_file, write_file
+except ModuleNotFoundError as e:
+  print(
+    f"Mandatory dependencies are missing:\n{e}"
+    "Please install them with python3 -m pip install --no-cache-dir --upgrade -r requirements.txt"
+  )
+  exit(1)
+except ImportError as e:
+  print(
+    "An error occurred while loading the dependencies!\n"
+    f"Details:\n{e}"
+  )
+  exit(1)
+except KeyboardInterrupt:
+  exit(1)
 
 
 mcp = FastMCP("akio")

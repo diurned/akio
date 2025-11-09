@@ -5,19 +5,20 @@ import logging
 from .config.init import init
 init()
 from .lib.utils.env import create_vdb_if_needed
-from .lib.utils.cli import run_cli
+from .lib.utils.cli import cli
+from .config.constants import ConstantConfig
 
 
 def main() -> None:
   create_vdb_if_needed()
   logging.basicConfig(
-    filename='akio.log',
+    filename=ConstantConfig.AKIO_LOG_FILE,
     level=logging.INFO,
     # format='[%(asctime)s] %(levelname)s - %(message)s',
   )
   # cli_handler = create_cli_handler(tui)
   # asyncio.run(cli_handler.run())
-  run_cli()
+  cli()
 
 
 if __name__ == "__main__":
