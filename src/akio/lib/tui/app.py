@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import readline
 import logging
 import json
 from ..mcp.client import MCPClient
@@ -10,13 +11,15 @@ from ...config.constants import ConstantConfig, Color
 
 
 logger = logging.getLogger(__name__)
+readline.parse_and_bind("tab: complete")
+readline.parse_and_bind("set editing-mode vi")
 
 
 def _help() -> None:
   with open(ConstantConfig.AKIO_CONFIG_FILE, 'r') as file:
     config = json.load(file)
   model = config.get('base_model')
-  title = f">_ Akio ({ConstantConfig.VERSION})"
+  title = f"{Color.RED}>_{Color.RESET} Akio ({ConstantConfig.VERSION})"
   model_text = f"model:     {model}   /model to change"
   directory_text = f"directory: {os.getcwd()}"
   content_lines = [title, model_text, directory_text]
@@ -25,7 +28,7 @@ def _help() -> None:
     return f"│ {line:<{box_width - 2}} │"
   print(
     f"╭{'─' * (box_width)}╮\n"
-    f"{pad(title)}\n"
+    f"{pad(title+'                             ')}\n"
     f"{pad('')}\n"
     f"{pad(model_text)}\n"
     f"{pad(directory_text)}\n"
@@ -35,7 +38,7 @@ def _help() -> None:
     f"{Color.LIGHT_GREEN}Commands:{Color.RESET}\n"
     f"\t{Color.LIGHT_BLUE}/model{Color.RESET}: Choose which model to use\n"
     f"\t{Color.LIGHT_BLUE}/quit{Color.RESET}, {Color.LIGHT_BLUE}/exit{Color.RESET}: Exit the chat\n"
-    f"\t{Color.LIGHT_BLUE}/help{Color.RESET}: Display this message"
+    f"\t{Color.LIGHT_BLUE}/help{Color.RESET}: Display this message\n"
   )
 
 
@@ -54,7 +57,7 @@ async def interactive_chat() -> None:
     )
     while True:
       try:
-        query = input("Ask anything -> ")
+        query = input(f"{Color.BG_GREY}{Color.DIM}Ask anything {Color.LIGHT_RED}->{Color.RESET} ")
         if query.startswith('/'):
           if query.lower() in ['/quit', '/exit']:
             break
@@ -62,7 +65,7 @@ async def interactive_chat() -> None:
             print(
               "Coming soon...\n"
               "Edit the following file to change model\n"
-              "\t~/.akio/settings.json")
+              f"\t{ConstantConfig.AKIO_CONFIG_FILE}")
           elif query.lower() == '/help':
             _help()
             continue

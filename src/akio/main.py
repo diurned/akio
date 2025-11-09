@@ -16,8 +16,6 @@ def main() -> None:
     level=logging.INFO,
     # format='[%(asctime)s] %(levelname)s - %(message)s',
   )
-  # cli_handler = create_cli_handler(tui)
-  # asyncio.run(cli_handler.run())
   cli()
 
 
