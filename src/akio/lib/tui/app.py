@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import logging
+import json
 from ..mcp.client import MCPClient
 # from ..utils.env import get_system_prompt
 from ...config.constants import ConstantConfig, Color
@@ -11,17 +13,27 @@ logger = logging.getLogger(__name__)
 
 
 def _help() -> None:
-  """Help function"""
+  with open(ConstantConfig.AKIO_CONFIG_FILE, 'r') as file:
+    config = json.load(file)
+  model = config.get('base_model')
+  title = f">_ Akio ({ConstantConfig.VERSION})"
+  model_text = f"model:     {model}   /model to change"
+  directory_text = f"directory: {os.getcwd()}"
+  content_lines = [title, model_text, directory_text]
+  box_width = max(len(line) for line in content_lines) + 2
+  def pad(line: str) -> str:
+    return f"│ {line:<{box_width - 2}} │"
   print(
-    "╭─────────────────────────────────────────╮\n"
-    f"│ >_ Akio ({ConstantConfig.VERSION})                     │\n"
-    "│                                         │\n"
-    "│ model:     qwen3:14b   /model to change │\n"
-    "│ directory: ~/Developer/GitHub/akio      │\n"
-    "╰─────────────────────────────────────────╯\n"
+    f"╭{'─' * (box_width)}╮\n"
+    f"{pad(title)}\n"
+    f"{pad('')}\n"
+    f"{pad(model_text)}\n"
+    f"{pad(directory_text)}\n"
+    f"╰{'─' * (box_width)}╯\n"
   )
   print(
     f"{Color.LIGHT_GREEN}Commands:{Color.RESET}\n"
+    f"\t{Color.LIGHT_BLUE}/model{Color.RESET}: Choose which model to use\n"
     f"\t{Color.LIGHT_BLUE}/quit{Color.RESET}, {Color.LIGHT_BLUE}/exit{Color.RESET}: Exit the chat\n"
     f"\t{Color.LIGHT_BLUE}/help{Color.RESET}: Display this message"
   )
