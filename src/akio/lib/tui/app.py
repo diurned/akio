@@ -3,6 +3,8 @@
 
 import os
 import readline
+import threading
+import time
 import logging
 import json
 from ..mcp.client import MCPClient
@@ -42,6 +44,37 @@ def _help() -> None:
   )
 
 
+def _start_loading(loading_active: threading.Event) -> None:
+  spinner = [
+    # "|", "/", "-", "\\"
+    # "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"
+    # "⣾ ", "⣽ ", "⣻ ", "⢿ ", "⡿ ", "⣟ ", "⣯ ", "⣷ "
+    # "⢄", "⢂", "⢁", "⡁", "⡈", "⡐", "⡠"
+    # "█", "▓", "▒", "░"
+    # "∙∙∙", "●∙∙", "∙●∙", "∙∙●"
+    # "🌍", "🌎", "🌏"
+    # "🙈", "🙉", "🙊"
+    # "▱▱▱", "▰▱▱", "▰▰▱", "▰▰▰", "▰▰▱", "▰▱▱", "▱▱▱",
+    # "☱", "☲", "☴", "☲"
+    # "", ".", "..", "..."
+    "🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"
+  ]
+  i = 0
+  while loading_active.is_set():
+    print(
+      f"\r{Color.DIM}Thinking...{Color.RESET} {spinner[i % len(spinner)]}",
+      end="",
+      flush=True
+    )
+    time.sleep(0.1)
+    i += 1
+  print(f"\r{Color.DIM}Done thinking.{Color.RESET}\n", end="", flush=True)
+
+
+def _stop_loading(loading_active: threading.Event) -> None:
+  loading_active.clear()
+
+
 async def interactive_chat() -> None:
   """Initialize and run the TUI chat interface."""
   # TODO: retrieve messages from pocketbase
@@ -70,7 +103,16 @@ async def interactive_chat() -> None:
             _help()
             continue
         else:
+          loading_active = threading.Event()
+          loading_active.set()
+          spinner_thread = threading.Thread(
+            target=_start_loading,
+            args=(loading_active,)
+          )
+          spinner_thread.start()
           response = await mcp_client.query(query)
+          _stop_loading(loading_active)
+          spinner_thread.join()
           if response and len(response) > 0:
             print(response[-1].get('content', 'No response content available.'))
           else:
