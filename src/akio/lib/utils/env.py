@@ -6,7 +6,7 @@ from typing import Tuple
 import os
 import hashlib
 from ..tools.rag import RAG
-from ...config.constants import ConstantConfig
+from ...config.constants import ConstantConfig, Color
 
 
 def env_info() -> Tuple[str,str]:
@@ -62,13 +62,13 @@ def create_vdb_if_needed() -> None:
   """
   rag = RAG(str(ConstantConfig.VECTOR_DB_PATH))
   if not rag.collection.count():
-    print("No data found in vector DB. Indexing documents...")
+    print(f"{Color.DIM}No data found in vector DB. Indexing documents...{Color.RESET}")
     rag.load(ConstantConfig.DATASETS_PATH)
     rag.chunk()
     rag.vector_store()
-    print("Vector store ready.")
+    print(f"{Color.DIM}Vector store ready.{Color.RESET}")
   else:
-    print(f"Loaded existing vector DB with {rag.collection.count()} entries.")
+    print(f"{Color.DIM}Loaded existing vector DB with {rag.collection.count()} entries.{Color.RESET}")
 
 
 def hash_folder(path: str) -> str:

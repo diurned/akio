@@ -44,7 +44,7 @@ def _help() -> None:
   )
 
 
-def _start_loading(loading_active: threading.Event) -> None:
+def start_loading(loading_active: threading.Event) -> None:
   spinner = [
     # "|", "/", "-", "\\"
     # "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"
@@ -71,7 +71,7 @@ def _start_loading(loading_active: threading.Event) -> None:
   print(f"\r{Color.DIM}Done thinking.{Color.RESET}\n", end="", flush=True)
 
 
-def _stop_loading(loading_active: threading.Event) -> None:
+def stop_loading(loading_active: threading.Event) -> None:
   loading_active.clear()
 
 
@@ -106,12 +106,12 @@ async def interactive_chat() -> None:
           loading_active = threading.Event()
           loading_active.set()
           spinner_thread = threading.Thread(
-            target=_start_loading,
+            target=start_loading,
             args=(loading_active,)
           )
           spinner_thread.start()
           response = await mcp_client.query(query)
-          _stop_loading(loading_active)
+          stop_loading(loading_active)
           spinner_thread.join()
           if response and len(response) > 0:
             print(response[-1].get('content', 'No response content available.'))

@@ -4,10 +4,11 @@
 
 import sys
 import subprocess
+import threading
 import asyncio
 import typer
 from ...config.constants import ConstantConfig
-from ..tui.app import interactive_chat
+from ..tui.app import interactive_chat, start_loading, stop_loading
 
 
 app = typer.Typer(help="An agentic AI for red team tasks.")
@@ -49,15 +50,21 @@ def serve(
 
 async def _direct_query(prompt: str) -> None:
   """Handle direct prompt input."""
-  print(f"\nPrompt: {prompt}\n")
-
   mcp_client = None
   try:
+    loading_active = threading.Event()
+    loading_active.set()
+    spinner_thread = threading.Thread(
+      target=start_loading,
+      args=(loading_active,)
+    )
+    spinner_thread.start()
     from ..mcp.client import MCPClient
-
     mcp_client = MCPClient()
     await mcp_client.connect_to_server(str(ConstantConfig.MCP_SERVER_PATH))
     response = await mcp_client.query(prompt)
+    stop_loading(loading_active)
+    spinner_thread.join()
 
     if not response:
       print("No response received from the assistant.")

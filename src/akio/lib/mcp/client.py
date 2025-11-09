@@ -11,6 +11,7 @@ from mcp.client.stdio import stdio_client
 
 import ollama
 
+from ...config.constants import Color
 from ..utils.env import get_system_prompt
 from ...config.settings import Settings
 
@@ -120,8 +121,8 @@ class MCPClient:
         for tool in response.message.tool_calls:
           if any(tool.function.name == func.function.name for func in self.tools):
             for _, tool in enumerate(response.message.tool_calls):
-              logger.info(f'Calling function: {tool.function.name}')
-              logger.info(f'Arguments: {tool.function.arguments}')
+              logger.info(f"Calling {tool.function.name}({tool.function.arguments})")
+              print(f"{Color.BG_GREY}{Color.LIGHT_RED}Calling {tool.function.name}({tool.function.arguments}){Color.RESET}")
               output = await self.session.call_tool(tool.function.name, tool.function.arguments)
               logger.info(f'Function output: {output}')
               self.messages.append({
