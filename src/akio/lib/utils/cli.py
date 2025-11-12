@@ -93,7 +93,15 @@ async def _direct_query(prompt: str) -> None:
 
 def cli() -> None:
   try:
-    if len(sys.argv) > 1 and sys.argv[1] not in ["--help", "-h", "serve", "chat"]:
+    if len(sys.argv) > 1 and sys.argv[1] not in [
+      "--help",
+      "-h",
+      "serve",
+      "chat",
+      "--version",
+      "--install-completion",
+      "--show-completion"
+    ]:
       asyncio.run(_direct_query(" ".join(sys.argv[1:])))
       return
     if len(sys.argv) == 1:

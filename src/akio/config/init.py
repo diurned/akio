@@ -17,49 +17,16 @@ class Config:
     pass
 
   def __call__(self):
-    self.create_config_folder()
-    self.create_config_file()
-    self.create_knowledge()
-    if not os.path.exists(ConstantConfig.DATASETS_PATH):
-      self.fetch_datasets()
-      # store the hash
-      with open(
-        file=ConstantConfig.DATASETS_HASH_FILE,
-        mode='w',
-        encoding='utf-8'
-      ) as f:
-        f.write(hash_folder(ConstantConfig.DATASETS_PATH))
-    # TODO: Enhance RAG hotload.
-    # Instead of remove and rebuild the entire
-    # vector database, only add or remove the difference.
-    else:
-      current_hash = hash_folder(ConstantConfig.DATASETS_PATH)
-      # check the hash for hotload
-      if os.path.exists(ConstantConfig.DATASETS_HASH_FILE):
-        with open(file=ConstantConfig.DATASETS_HASH_FILE, mode='r') as f:
-          if f.read().strip() != current_hash:
-            print("Change detected, rebuilding the vector database...")
-            shutil.rmtree(ConstantConfig.VECTOR_DB_PATH)
-            create_vdb_if_needed()
-            with open(
-              file=ConstantConfig.DATASETS_HASH_FILE,
-              mode='w',
-              encoding='utf-8'
-            ) as f:
-              f.write(current_hash)
-      else:
-        with open(
-          ConstantConfig.DATASETS_HASH_FILE,
-          'w',
-          encoding='utf-8'
-        ) as f:
-          f.write(hash_folder(ConstantConfig.DATASETS_PATH))
+    self._create_config_folder()
+    self._create_config_file()
+    self._create_knowledge()
+    self._create_datasets()
 
-  def create_config_folder(self) -> None:
+  def _create_config_folder(self) -> None:
     if not os.path.exists(ConstantConfig.AKIO_CONFIG_PATH):
       os.makedirs(ConstantConfig.AKIO_CONFIG_PATH)
 
-  def create_config_file(self) -> None:
+  def _create_config_file(self) -> None:
     if not os.path.exists(ConstantConfig.AKIO_CONFIG_FILE):
       with open(ConstantConfig.AKIO_CONFIG_FILE, 'w', encoding='utf-8') as file:
         file.write("""{
@@ -73,7 +40,7 @@ class Config:
   "chroma_base_url": "http://localhost:8000"
 }""")
 
-  def create_knowledge(self) -> None:
+  def _create_knowledge(self) -> None:
     if not os.path.exists(ConstantConfig.SYSTEM_PROMPT_PATH):
       os.makedirs(os.path.dirname(ConstantConfig.SYSTEM_PROMPT_PATH), exist_ok=True)
       with open(ConstantConfig.SYSTEM_PROMPT_PATH, 'a', encoding='utf-8') as file:
@@ -129,7 +96,7 @@ You don’t wait for permission to be excellent.
 
 You are Akio. Built for the shadows. Born to break things. Let’s cause some trouble.""")
 
-  def fetch_datasets(
+  def _fetch_datasets(
     self,
     repo_owner: str = "Fastiraz",
     repo_name: str = "akio",
@@ -149,7 +116,7 @@ You are Akio. Built for the shadows. Born to break things. Let’s cause some tr
       branch (str): Branch name
     """
     url = f"https://github.com/{repo_owner}/{repo_name}/archive/refs/heads/{branch}.zip"
-    local_dir = Path(local_dir)
+    local_dir: Path = Path(local_dir)
     local_dir.mkdir(parents=True, exist_ok=True)
     print(f"Downloading repository archive from {url}")
     with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
@@ -184,6 +151,42 @@ You are Akio. Built for the shadows. Born to break things. Let’s cause some tr
           target.write(source.read())
     tmp_path.unlink(missing_ok=True)
     print("Extraction complete.")
+
+  def _create_datasets(self) -> None:
+    if not os.path.exists(ConstantConfig.DATASETS_PATH):
+      self._fetch_datasets()
+      # store the hash
+      with open(
+        file=ConstantConfig.DATASETS_HASH_FILE,
+        mode='w',
+        encoding='utf-8'
+      ) as f:
+        f.write(hash_folder(ConstantConfig.DATASETS_PATH))
+    # TODO: Enhance RAG hotload.
+    # Instead of remove and rebuild the entire
+    # vector database, only add or remove the difference.
+    else:
+      current_hash = hash_folder(ConstantConfig.DATASETS_PATH)
+      # check the hash for hotload
+      if os.path.exists(ConstantConfig.DATASETS_HASH_FILE):
+        with open(file=ConstantConfig.DATASETS_HASH_FILE, mode='r') as f:
+          if f.read().strip() != current_hash:
+            print("Change detected, rebuilding the vector database...")
+            shutil.rmtree(ConstantConfig.VECTOR_DB_PATH)
+            create_vdb_if_needed()
+            with open(
+              file=ConstantConfig.DATASETS_HASH_FILE,
+              mode='w',
+              encoding='utf-8'
+            ) as f:
+              f.write(current_hash)
+      else:
+        with open(
+          ConstantConfig.DATASETS_HASH_FILE,
+          'w',
+          encoding='utf-8'
+        ) as f:
+          f.write(hash_folder(ConstantConfig.DATASETS_PATH))
 
 
 def init() -> None:
