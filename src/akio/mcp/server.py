@@ -8,12 +8,12 @@ try:
   sys.path.append(str(Path(__file__).parent.parent.parent))
 
   from mcp.server.fastmcp import FastMCP
-  from akio.lib.tools.shell import shell_tool, hacking_tool
-  from akio.lib.tools.rag import RAG
-  from akio.lib.tools.browser import web_browser_tool
-  from akio.lib.tools.message import ask_user_tool
-  from akio.lib.tools.web_search import ddg_search
-  from akio.lib.tools.code import read_file, write_file
+  from akio.tools.shell import shell_tool, hacking_tool
+  from akio.tools.rag import RAG
+  from akio.tools.browser import web_browser_tool
+  from akio.tools.message import ask_user_tool
+  from akio.tools.web_search import ddg_search
+  from akio.tools.code import read_file, write_file
 except ModuleNotFoundError as e:
   print(
     f"Mandatory dependencies are missing:\n{e}"

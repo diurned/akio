@@ -38,7 +38,7 @@ class BaseClient:
     proxies (Union[list, str]): List or single proxy to use.
     default_user_agents (Union[list, str]): List or single User-Agent string.
   """
-  def __init__(self, proxies: Union[list, str] = None, default_user_agents: Union[list, str] = None, random_ua: bool = None):
+  def __init__(self, proxies: Union[list, str] | None = None, default_user_agents: Union[list, str] | None = None, random_ua: bool | None = None):
     if random_ua is not None:
       warn("The random_ua parameter has been deprecated in favor of the default_user_agents parameter and will be removed in a future release.", DeprecationWarning, 2)
     self.proxies = proxies
@@ -84,7 +84,7 @@ class Client(BaseClient):
 class AsyncClient(BaseClient):
   """Asynchronous DuckDuckGo search client."""
 
-  def __init__(self, proxies: Union[list, str] = None, default_user_agents: Union[list, str] = None, random_ua: bool = None):
+  def __init__(self, proxies: Union[list, str] | None = None, default_user_agents: Union[list, str] | None = None, random_ua: bool | None = None):
     self.loop = asyncio.get_event_loop()
     super().__init__(proxies=proxies, default_user_agents=default_user_agents, random_ua=random_ua)
 

@@ -4,7 +4,7 @@
 import logging
 from ..mcp.client import MCPClient
 from ..utils.voice import speech_to_text
-from ...config.constants import ConstantConfig
+from ..config.constants import ConstantConfig
 from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 

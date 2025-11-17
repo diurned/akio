@@ -4,8 +4,8 @@
 import logging
 from .config.init import init
 init()
-from .lib.utils.env import create_vdb_if_needed
-from .lib.utils.cli import cli
+from .utils.env import create_vdb_if_needed
+from .cli import cli
 from .config.constants import ConstantConfig
 
 

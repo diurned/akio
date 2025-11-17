@@ -53,10 +53,10 @@ class ConstantConfig:
   SYSTEM_PROMPT_PATH: str = AKIO_CONFIG_PATH / "knowledge/prompt.txt"
 
   # MCP server path
-  MCP_SERVER_PATH: str = SRC_ROOT_PATH_OBJ / f"{NAME}/lib/mcp/server.py"
+  MCP_SERVER_PATH: str = SRC_ROOT_PATH_OBJ / f"{NAME}/mcp/server.py"
 
   # API server path
-  API_SERVER_PATH: str = SRC_ROOT_PATH_OBJ / f"{NAME}/lib/api/routes.py"
+  API_SERVER_PATH: str = SRC_ROOT_PATH_OBJ / f"{NAME}/api/routes.py"
 
 
 @dataclass(frozen=True)

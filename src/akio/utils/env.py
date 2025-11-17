@@ -6,7 +6,7 @@ from typing import Tuple
 import os
 import hashlib
 from ..tools.rag import RAG
-from ...config.constants import ConstantConfig, Color
+from ..config.constants import ConstantConfig, Color
 
 
 def env_info() -> Tuple[str,str]:

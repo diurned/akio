@@ -6,7 +6,7 @@ import os
 from typing import Dict
 
 
-def read_file(file_path: str = None) -> str:
+def read_file(file_path: str | None = None) -> str:
   """
   Utility function to read a file and return its content.
 

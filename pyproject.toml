@@ -45,7 +45,7 @@ maintainers = [
 ]
 
 [project.scripts]
-akio = "akio.main:main"
+akio = "akio.__main__:main"
 
 [project.urls]
 homepage = "https://github.com/fastiraz/akio"
@@ -69,7 +69,7 @@ line-length = 80
 exclude = ["datasets"]
 
 [tool.ruff.lint.per-file-ignores]
-"src/akio/main.py" = ["E402"]
+"src/akio/__main__.py" = ["E402"]
 
 [tool.ruff.format]
 # TODO: indent width = 2

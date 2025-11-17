@@ -9,8 +9,8 @@ from chromadb.config import Settings
 import ollama
 import re
 from time import time
-from ...config.constants import ConstantConfig
-from ...config.settings import Settings as AkioSettings
+from ..config.constants import ConstantConfig
+from ..config.settings import Settings as AkioSettings
 
 
 class RAG:
@@ -32,7 +32,7 @@ class RAG:
     )
 
 
-  def load(self, directory: str = ConstantConfig.DATASETS_PATH, allowed_extensions: List[str] = None) -> List[str]:
+  def load(self, directory: str = ConstantConfig.DATASETS_PATH, allowed_extensions: List[str] | None = None) -> List[str]:
     """
     Recursively loads files from a directory.
 

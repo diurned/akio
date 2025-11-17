@@ -11,9 +11,9 @@ from mcp.client.stdio import stdio_client
 
 import ollama
 
-from ...config.constants import Color
+from ..config.constants import Color
 from ..utils.env import get_system_prompt
-from ...config.settings import Settings
+from ..config.settings import Settings
 
 
 logger = logging.getLogger(__name__)

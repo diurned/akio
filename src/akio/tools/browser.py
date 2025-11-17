@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ...config.settings import Settings
+from ..config.settings import Settings
 from browser_use import (
   Agent,
   Tools,

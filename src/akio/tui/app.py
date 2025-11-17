@@ -9,7 +9,7 @@ import logging
 import json
 from ..mcp.client import MCPClient
 # from ..utils.env import get_system_prompt
-from ...config.constants import ConstantConfig, Color
+from ..config.constants import ConstantConfig, Color
 
 
 logger = logging.getLogger(__name__)

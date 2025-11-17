@@ -7,7 +7,7 @@ import zipfile
 import tempfile
 from pathlib import Path
 import shutil
-from ..lib.utils.env import hash_folder, create_vdb_if_needed
+from ..utils.env import hash_folder, create_vdb_if_needed
 from .constants import ConstantConfig
 import requests
 
