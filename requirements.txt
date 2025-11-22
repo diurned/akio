@@ -10,3 +10,4 @@ asyncio
 
 fastapi[standard]
 rich
+transformers

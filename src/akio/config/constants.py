@@ -58,6 +58,9 @@ class ConstantConfig:
   # API server path
   API_SERVER_PATH: str = SRC_ROOT_PATH_OBJ / f"{NAME}/api/routes.py"
 
+  # HuggingFace Model path
+  HF_MODELS_PATH: str = AKIO_CONFIG_PATH / "router/models"
+
 
 @dataclass(frozen=True)
 class Color:

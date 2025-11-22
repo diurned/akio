@@ -11,9 +11,10 @@ from mcp.client.stdio import stdio_client
 
 import ollama
 
-from ..config.constants import Color
+from ..config.constants import Color, ConstantConfig
 from ..utils.env import get_system_prompt
 from ..config.settings import Settings
+from ..router import Router
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,14 @@ class MCPClient:
       {'role': 'system', 'content': get_system_prompt()},
       {"role": "assistant", "content": "What are we breaking today?"}
     ]
+    # TODO: Make it editable from config file.
+    self.map = {
+      "general": Settings.base_model,
+      "code": "qwen2.5-coder:14b",
+      "math": "mathstral:latest",
+      "hacking": "deepseek-r1:8b"
+    }
+    self.router = Router(self.map, cache_dir=ConstantConfig.HF_MODELS_PATH)
 
   async def connect_to_server(self, server_script_path: str):
     """Connect to an MCP server
@@ -98,9 +107,11 @@ class MCPClient:
     """
     self.messages.append({"role": "user","content": query})
     iteration = 0
+    result = self.router.route(sequence=query)
+    print(f"\r{Color.DIM}Routes to {result.model} model.{Color.RESET}\n", end="", flush=True)
     while iteration < max_iterations:
       response: ollama.ChatResponse = await self.ollama.chat(
-        model=Settings.base_model,
+        model=result.model,
         messages=self.messages,
         think=False,
         tools=self.tools,
