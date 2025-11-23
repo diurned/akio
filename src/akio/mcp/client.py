@@ -18,7 +18,7 @@ from ..router import Router
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(filename='akio.log', level=logging.INFO)
+logging.basicConfig(filename=ConstantConfig.AKIO_LOG_FILE, level=logging.INFO)
 
 
 class MCPClient:
@@ -66,29 +66,74 @@ class MCPClient:
     self.tools = self._convert_tools(response.tools)
 
   def _convert_tools(self, tools) -> list | None:
-    """
-    Convert MCP tools into Ollama Tool objects.
-    Returns a list of ollama.Tool instances with proper Parameters.Property wrapping.
-    """
-    converted_tools = []
-    for i, tool in enumerate(tools):
-      try:
-        ollama_tool = ollama.Tool(
-          type="function",
-          function=ollama.Tool.Function(
-            name=tool.name,
-            description=tool.description,
-            parameters=tool.inputSchema or {
-              "type": "object",
-              "properties": {},
-              "required": []
-            }
-          )
+    converted = []
+    for tool in tools:
+      schema = tool.inputSchema or {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+      ollama_tool = ollama.Tool(
+        type="function",
+        function=ollama.Tool.Function(
+          name=tool.name,
+          description=tool.description or "",
+          parameters={
+            "type": "object",
+            "properties": schema.get("properties", {}),
+            "required": schema.get("required", [])
+          }
         )
-        converted_tools.append(ollama_tool)
-      except Exception as e:
-        print(f"An error occurred during tool convertion.\n{e}")
-    return converted_tools
+      )
+      converted.append(ollama_tool)
+    return converted
+
+  async def auto_q(self, model: str) -> ollama.ChatResponse | None:
+    """Automatically handle if the provided model support thinking or tool calling.
+
+    Args:
+      model (str): The model to query.
+
+    Return:
+      ollama.ChatResponse | None: The model's response, or None if an error occurs.
+    """
+    thinking_models: list[str] = [
+      "gpt-oss", "deepseek-r1", "qwen3",
+      "deepseek-v3.1", "magistral", "gpt-oss-safeguard"
+    ]
+    tooling_models: list[str] = [
+      "athene-v2", "aya-expanse", "cogito", "command-a", "command-r",
+      "command-r-plus", "command-r7b", "command-r7b-arabic", "deepseek-r1",
+      "deepseek-v3.1", "devstral", "firefunction-v2", "gpt-oss",
+      "gpt-oss-safeguard", "granite3-dense", "granite3-moe",
+      "granite3.1-dense", "granite3.1-moe", "granite3.2", "granite3.2-vision",
+      "granite3.3", "granite4", "hermes3", "llama3-groq-tool-use", "llama3.1",
+      "llama3.2", "llama3.3", "llama4", "magistral", "mistral", "mistral-large",
+      "mistral-nemo", "mistral-small", "mistral-small3.1", "mistral-small3.2",
+      "mixtral", "nemotron", "nemotron-mini", "phi4-mini", "qwen2", "qwen2.5",
+      "qwen2.5-coder", "qwen3", "qwen3-coder", "qwen3-vl", "qwq", "smollm2"
+    ]
+    vision_models: list[str] = [
+      "bakllava", "deepseek-ocr", "gemma3", "granite3.2-vision",
+      "llama3.2-vision", "llama4", "llava", "llava-llama3", "llava-phi3",
+      "minicpm-v", "mistral-small3.1", "mistral-small3.2", "moondream",
+      "qwen2.5vl", "qwen3-vl"
+    ]
+    try:
+      response: ollama.ChatResponse = await self.ollama.chat(
+        model=model,
+        messages=self.messages,
+        think=True if model.split(':')[0] in thinking_models else False,
+        tools=self.tools if model.split(':')[0] in tooling_models else None,
+        stream=False
+      )
+      return response
+    except ollama.ResponseError as e:
+      print(f"Ollama API error for model '{model}': {e}")
+      exit(1)
+    except Exception as e:
+      print(f"Unexpected error during chat with model '{model}': {e}")
+      exit(1)
 
   async def query(
     self,
@@ -108,33 +153,31 @@ class MCPClient:
     self.messages.append({"role": "user","content": query})
     iteration = 0
     result = self.router.route(sequence=query)
-    print(f"\r{Color.DIM}Routes to {result.model} model.{Color.RESET}\n", end="", flush=True)
+    print(
+      f"\r{Color.DIM}Routes to {result.model} model.{Color.RESET}\n",
+      end="",
+      flush=True
+    )
     while iteration < max_iterations:
-      response: ollama.ChatResponse = await self.ollama.chat(
-        model=result.model,
-        messages=self.messages,
-        think=False,
-        tools=self.tools,
-        stream=False
-      )
-      # Convert Ollama Message to dict format for consistency
+      response: ollama.ChatResponse = await self.auto_q(result.model)
+      logger.debug(f"\n{response}")
       message_dict = {
         'role': response.message.role,
         'content': response.message.content or ''
       }
-      if hasattr(response.message, 'tool_calls') and response.message.tool_calls:
-        message_dict['tool_calls'] = response.message.tool_calls
-      self.messages.append(message_dict)
-      logger.debug(f"\n{response.message}")
-      logger.debug(f"\n{self.tools}")
       if response.message.tool_calls:
+        message_dict['tool_calls'] = response.message.tool_calls
+        self.messages.append(message_dict)
         logger.info(f"\n--- Processing {len(response.message.tool_calls)} tool call(s) ---")
         for tool in response.message.tool_calls:
           if any(tool.function.name == func.function.name for func in self.tools):
             for _, tool in enumerate(response.message.tool_calls):
               logger.info(f"Calling {tool.function.name}({tool.function.arguments})")
               print(f"{Color.BG_GREY}{Color.LIGHT_RED}Calling {tool.function.name}({tool.function.arguments}){Color.RESET}")
-              output = await self.session.call_tool(tool.function.name, tool.function.arguments)
+              output = await self.session.call_tool(
+                tool.function.name,
+                tool.function.arguments
+              )
               logger.info(f'Function output: {output}')
               self.messages.append({
                 'role': 'tool',
@@ -145,11 +188,13 @@ class MCPClient:
           else:
             logger.error(f'Function {tool.function.name} not found')
       else:
+        # TODO: Check if tool calling is in content.
+        self.messages.append(message_dict)
         iteration += 1
         return self.messages
         break
     if iteration >= max_iterations:
-      logger.warning(f"\n⚠️  Reached maximum iterations ({max_iterations}). Stopping auto-execution.")
+      logger.warning(f"\nReached maximum iterations ({max_iterations}). Stopping auto-execution.")
     return self.messages
 
   async def cleanup(self):

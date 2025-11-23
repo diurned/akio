@@ -65,19 +65,10 @@ async def _direct_query(prompt: str) -> None:
     response = await mcp_client.query(prompt)
     stop_loading(loading_active)
     spinner_thread.join()
-
     if not response:
       print("No response received from the assistant.")
       return
-
-    last_message = response[-1]
-    if isinstance(last_message, dict):
-      ai_response = last_message.get("content", "No response content available.")
-    else:
-      ai_response = getattr(last_message, "content", "No response content available.")
-
-    print(ai_response or "No response content available from the assistant.")
-
+    print(response[-1]["content"] or "No response content available.")
   except ImportError:
     print("No prompt handler found — implement handle_prompt() to process the input.")
   except KeyboardInterrupt:
