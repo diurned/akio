@@ -61,6 +61,9 @@ class ConstantConfig:
   # HuggingFace Model path
   HF_MODELS_PATH: str = AKIO_CONFIG_PATH / "router/models"
 
+  # Model Router path
+  ROUTER_CONFIG_PATH: str = AKIO_CONFIG_PATH / "router/config.json"
+
 
 @dataclass(frozen=True)
 class Color:

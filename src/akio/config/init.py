@@ -9,6 +9,7 @@ from pathlib import Path
 import shutil
 from ..utils.env import hash_folder, create_vdb_if_needed
 from .constants import ConstantConfig
+from .settings import Settings
 import requests
 
 
@@ -21,6 +22,7 @@ class Config:
     self._create_config_file()
     self._create_knowledge()
     self._create_datasets()
+    self._create_model_mapping()
 
   def _create_config_folder(self) -> None:
     if not os.path.exists(ConstantConfig.AKIO_CONFIG_PATH):
@@ -188,6 +190,14 @@ You are Akio. Built for the shadows. Born to break things. Let’s cause some tr
         ) as f:
           f.write(hash_folder(ConstantConfig.DATASETS_PATH))
 
+  def _create_model_mapping(self) -> None:
+    if not os.path.exists(ConstantConfig.ROUTER_CONFIG_PATH):
+      with open(
+        file=ConstantConfig.ROUTER_CONFIG_PATH,
+        mode="w",
+        encoding='utf-8'
+      ) as fd:
+        fd.write(f'{{"general": "{Settings.base_model}"}}')
 
 def init() -> None:
   config = Config()

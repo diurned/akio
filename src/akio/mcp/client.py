@@ -4,6 +4,7 @@
 import sys
 import logging
 from typing import Optional, Any
+import json
 from contextlib import AsyncExitStack
 
 from mcp import ClientSession, StdioServerParameters
@@ -31,13 +32,8 @@ class MCPClient:
       {'role': 'system', 'content': get_system_prompt()},
       {"role": "assistant", "content": "What are we breaking today?"}
     ]
-    # TODO: Make it editable from config file.
-    self.map = {
-      "general": Settings.base_model,
-      "code": "qwen2.5-coder:14b",
-      "math": "mathstral:latest",
-      "hacking": "deepseek-r1:8b"
-    }
+    # TODO: Handle if an empty object ({}) is return.
+    self.map = json.load(open(ConstantConfig.ROUTER_CONFIG_PATH)) or {"general": Settings.base_model}
     self.router = Router(self.map, cache_dir=ConstantConfig.HF_MODELS_PATH)
 
   async def connect_to_server(self, server_script_path: str):
