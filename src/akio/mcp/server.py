@@ -3,9 +3,9 @@
 
 
 try:
-  import sys
-  from pathlib import Path
-  sys.path.append(str(Path(__file__).parent.parent.parent))
+  # import sys
+  # from pathlib import Path
+  # sys.path.append(str(Path(__file__).parent.parent.parent))
 
   from mcp.server.fastmcp import FastMCP
   from akio.tools.shell import shell_tool, hacking_tool
@@ -14,6 +14,8 @@ try:
   from akio.tools.message import ask_user_tool
   from akio.tools.web_search import ddg_search
   from akio.tools.code import read_file, write_file
+  from akio.tools.python import PythonTool
+  from openai_harmony import Message, TextContent, Author, Role
 except ModuleNotFoundError as e:
   print(
     f"Mandatory dependencies are missing:\n{e}"
@@ -164,6 +166,33 @@ def read_file_tool(file_path: str) -> str:
     str: File content if successful, None if failed.
   """
   return read_file(file_path)
+
+
+@mcp.tool(
+  name="python",
+  title="Execute Python code",
+  description="""
+Use this tool to execute Python code in your chain of thought. The code will not be shown to the user. This tool should be used for internal reasoning, but not for code that is intended to be visible to the user (e.g. when creating plots, tables, or files).
+When you send a message containing python code to python, it will be executed in a stateless docker container, and the stdout of that process will be returned to you.
+  """,
+  annotations={
+      # Harmony format don't want this schema to be part of it because it's simple text in text out
+      "include_in_prompt": False,
+  })
+async def python(code: str) -> str:
+  tool = PythonTool()
+  messages = []
+  async for message in tool.process(
+    Message(
+      author=Author(
+        role=Role.TOOL,
+        name="python"
+      ),
+      content=[TextContent(text=code)]
+    )
+  ):
+    messages.append(message)
+  return "\n".join([message.content[0].text for message in messages])
 
 
 if __name__ == "__main__":

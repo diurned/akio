@@ -11,3 +11,6 @@ asyncio
 fastapi[standard]
 rich
 transformers
+
+docker
+openai-harmony

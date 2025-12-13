@@ -88,7 +88,7 @@ class MCPClient:
       converted.append(ollama_tool)
     return converted
 
-  async def auto_q(self, model: str) -> ollama.ChatResponse | None:
+  async def auto_q(self, model: str) -> ollama.ChatResponse:
     """Automatically handle if the provided model support thinking or tool calling.
 
     Args:
