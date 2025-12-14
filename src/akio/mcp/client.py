@@ -154,6 +154,18 @@ class MCPClient:
       end="",
       flush=True
     )
+    # NOTE: This only takes models from the router's configuration file.
+    # If you change the `base_model` in Akio's settings file,
+    # it will not be used here. To update the model, modify the
+    # router configuration file instead of the Akio's settings file.
+    # We probably have to handle this case later.
+    if result.model not in [model.model for model in ollama.list().models]:
+      print(
+        f"\r{Color.DIM}Pulling {result.model} model.{Color.RESET}\n",
+        end="",
+        flush=True
+      )
+      ollama.pull(result.model)
     while iteration < max_iterations:
       response: ollama.ChatResponse = await self.auto_q(result.model)
       logger.debug(f"\n{response}")
