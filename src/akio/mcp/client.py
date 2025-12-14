@@ -166,6 +166,11 @@ class MCPClient:
         flush=True
       )
       ollama.pull(result.model)
+      print(
+        f"\r{Color.DIM}✔︎ Model {result.model} pulled.{Color.RESET}\n",
+        end="",
+        flush=True
+      )
     while iteration < max_iterations:
       response: ollama.ChatResponse = await self.auto_q(result.model)
       logger.debug(f"\n{response}")
