@@ -6,7 +6,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 
-__version__ = "0.0.2-dev"
+__version__ = "0.0.5-dev"
 
 
 @dataclass

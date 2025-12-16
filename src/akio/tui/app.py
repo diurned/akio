@@ -90,7 +90,7 @@ async def interactive_chat() -> None:
     )
     while True:
       try:
-        query = input(f"{Color.BG_GREY}{Color.DIM}Ask anything {Color.LIGHT_RED}->{Color.RESET} ")
+        query = input(f"{Color.BG_GREY}{Color.DIM}Ask anything {Color.LIGHT_RED}➜{Color.RESET} ")
         if query.startswith('/'):
           if query.lower() in ['/quit', '/exit']:
             break

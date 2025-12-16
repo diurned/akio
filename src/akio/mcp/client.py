@@ -167,7 +167,7 @@ class MCPClient:
       )
       ollama.pull(result.model)
       print(
-        f"\r{Color.DIM}✔︎ Model {result.model} pulled.{Color.RESET}\n",
+        f"\r{Color.LIGHT_GREEN}✔︎{Color.RESET} {Color.DIM}Model {result.model} pulled.{Color.RESET}\n",
         end="",
         flush=True
       )
