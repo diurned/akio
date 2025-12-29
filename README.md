@@ -56,9 +56,15 @@ You can read the installation instructions in the [Grimoire](https://fastiraz.gi
 pipx install akio
 ```
 
+### From the repository
+
+```sh
+pipx install git+https://github.com/Fastiraz/akio.git
+```
 ### From source
 
 ```sh
+
 git clone https://github.com/Fastiraz/akio.git
 cd akio
 
