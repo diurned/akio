@@ -9,6 +9,11 @@
 
 ---
 
+> [!IMPORTANT]  
+> Due to the growing number of CLI autonomous AI agents, we decided to take a break and think about the direction of the project.
+> We now have a clear vision for the future of Akio. The project is not dead, but a lot of work lies ahead.
+> The way Akio works, the technical design will change, and its usage to.
+
 > [!WARNING]
 > **Akio is under active development.**
 > The project is not yet fully functional and may not work as expected out of the box.
