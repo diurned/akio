@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Result};
+use regex::Regex;
 use reqwest::Url;
-use scraper::{Html, Selector};
 use serde_json::{json, Value};
 
 use super::Tool;
@@ -30,55 +30,55 @@ fn extract_url(href: &str) -> String {
 
 impl WebSearchTool {
     fn search(&self, query: &str, num_results: usize) -> Result<Vec<SearchResult>> {
-        let query = query.to_string();
+        let mut url = Url::parse("https://html.duckduckgo.com/html")?;
+        url.query_pairs_mut().append_pair("q", query);
+        let url_string = url.to_string();
 
-        // Run the blocking HTTP request on a dedicated thread to avoid
-        // panicking when called from within a tokio async runtime.
+        // reqwest::blocking spawns its own Tokio runtime, which panics when called
+        // from inside an existing async runtime. Spawn a plain OS thread to escape it.
         let response = std::thread::spawn(move || -> Result<String> {
-            let client = reqwest::blocking::Client::builder()
-                .user_agent("Mozilla/5.0 (compatible; AkioBot/0.1)")
-                .build()?;
-
-            let mut url = Url::parse("https://html.duckduckgo.com/html/").unwrap();
-            url.query_pairs_mut().append_pair("q", &query);
-
-            Ok(client.get(url).send()?.text()?)
+            Ok(reqwest::blocking::Client::builder()
+                .user_agent("Mozilla/5.0 (compatible; akio/0.1)")
+                .build()?
+                .get(&url_string)
+                .send()?
+                .text()?)
         })
         .join()
         .map_err(|_| anyhow!("search thread panicked"))??;
 
-        let document = Html::parse_document(&response);
-        let result_sel = Selector::parse(".result").unwrap();
-        let title_sel = Selector::parse(".result__a").unwrap();
-        let snippet_sel = Selector::parse(".result__snippet").unwrap();
+        let title_re = Regex::new(r#"<a[^>]*class="result__a"[^>]*>(.*?)</a>"#)?;
+        let url_re = Regex::new(r#"<a[^>]*class="result__a"[^>]*href="([^"]*)""#)?;
+        let snippet_re = Regex::new(r#"(?s)<a[^>]*class="result__snippet"[^>]*>(.*?)</a>"#)?;
+        let bold_re = Regex::new(r"</?b>")?;
 
         let mut results = Vec::new();
-        for element in document.select(&result_sel) {
+
+        for chunk in response.split("<div class=\"result results_links").skip(1) {
             if results.len() >= num_results {
                 break;
             }
 
-            let title = element
-                .select(&title_sel)
-                .next()
-                .map(|e| e.text().collect::<String>())
-                .unwrap_or_default();
+            let title = title_re
+                .captures(chunk)
+                .and_then(|c| c.get(1))
+                .map(|m| m.as_str().trim().to_string());
 
-            let url = element
-                .select(&title_sel)
-                .next()
-                .and_then(|e| e.value().attr("href"))
-                .map(extract_url)
-                .unwrap_or_default();
+            let raw_url = url_re
+                .captures(chunk)
+                .and_then(|c| c.get(1))
+                .map(|m| m.as_str().to_string());
 
-            let snippet = element
-                .select(&snippet_sel)
-                .next()
-                .map(|e| e.text().collect::<String>())
-                .unwrap_or_default();
+            let snippet = snippet_re
+                .captures(chunk)
+                .and_then(|c| c.get(1))
+                .map(|m| bold_re.replace_all(m.as_str(), "").trim().to_string());
 
-            if !title.is_empty() {
-                results.push(SearchResult { title, url, snippet });
+            if let (Some(title), Some(raw_url), Some(snippet)) = (title, raw_url, snippet) {
+                let url = extract_url(&raw_url);
+                if !title.is_empty() && !url.is_empty() && !snippet.is_empty() {
+                    results.push(SearchResult { title, url, snippet });
+                }
             }
         }
 

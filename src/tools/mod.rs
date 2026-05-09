@@ -2,6 +2,7 @@ pub mod glob;
 pub mod read;
 pub mod shell;
 pub mod write;
+pub mod websearch;
 
 use anyhow::Result;
 use serde_json::Value;
@@ -38,6 +39,7 @@ pub fn default_registry() -> ToolRegistry {
         Box::new(write::WriteTool),
         Box::new(read::ReadTool),
         Box::new(glob::GlobTool),
+        Box::new(websearch::WebSearchTool),
     ])
 }
 

@@ -19,14 +19,14 @@
 
 ## What is Akio?
 
-Akio is a **plug-and-play autonomous AI agent** with **embedded model inference**, written in **Rust**. No OpenAI, no Anthropic, no Ollama — the inference runs directly inside the binary. It combines the power of large language models (LLMs) with real-world capabilities by integrating with a shell, read/write tools and a glob tool. Need more tools? Akio support MCP servers.
+Akio is a **plug-and-play autonomous AI agent** with **embedded model inference**, written in **Rust**. No OpenAI, no Anthropic, no Ollama — the inference runs directly inside the binary. It combines the power of large language models (LLMs) with real-world capabilities by integrating with a shell, read/write tools, a glob and websearch tools. Need more tools? Akio support MCP servers.
 
 ---
 
 ## Roadmap features
 
 - [x] LLM inference
-- [x] Default tools (shell, read, write, and glob)
+- [x] Default tools (shell, read, write, glob, and websearch)
 - [x] MCP
 - [ ] API
 - [ ] Orchestrator
@@ -50,7 +50,13 @@ The Grimoire is the official Akio's documentation. You can read it [here](https:
 
 ## Installation
 
-### Using cargo (recommend)
+### Using curl (recommend)
+
+```sh
+curl -fsSL https://ak.io/install.sh | sh
+```
+
+### Using cargo
 
 ```sh
 cargo install --git https://github.com/Fastiraz/akio.git
