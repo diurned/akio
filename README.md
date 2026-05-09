@@ -4,15 +4,10 @@
 
 <div align="center">
   <h1><code>akio</code></h1>
-  <p>Your red team assistant who helps you break things.</p>
+  <p>An autonomous AI agent written in Rust with in-binary inference.</p>
 </div>
 
 ---
-
-> [!IMPORTANT]  
-> Due to the growing number of CLI autonomous AI agents, we decided to take a break and think about the direction of the project.
-> We now have a clear vision for the future of Akio. The project is not dead, but a lot of work lies ahead.
-> The way Akio works, the technical design will change, and its usage to.
 
 > [!WARNING]
 > **Akio is under active development.**
@@ -24,63 +19,39 @@
 
 ## What is Akio?
 
-Akio is an autonomous AI agent specialized in offensive security. It combines the power of a large language model (LLM) with real-world capabilities by integrating with a shell, a web browser, a Retrieval-Augmented Generation (RAG) pipeline, and popular tools like **Ghidra** and **Burp Suite** through an MCP server.
-
-**It's not build to replace** penetration testers, Akio is designed to **assist** them helping automate tasks, accelerate workflows, and provide intelligent interaction with common red team tools.
+Akio is a **plug-and-play autonomous AI agent** with **embedded model inference**, written in **Rust**. No OpenAI, no Anthropic, no Ollama — the inference runs directly inside the binary. It combines the power of large language models (LLMs) with real-world capabilities by integrating with a shell, read/write tools and a glob tool. Need more tools? Akio support MCP servers.
 
 ---
 
-## Features
+## Roadmap features
 
-- Uncensored LLM
-- Autonomous AI agent
-- Tools
-- - Shell commands execution
-- - RAG for offensive security topics
-- - Browser use
-- - Message interaction with user
-- - Web search (DuckDuckGo)
-- - Coding agent
+- [x] LLM inference
+- [x] Default tools (shell, read, write, and glob)
+- [x] MCP
+- [ ] API
+- [ ] Orchestrator
+    - [ ] Model routing
+    - [ ] System prompt for each worker
+    - [ ] Built-in tools for each worker
+- [ ] Voice mode
+    - [ ] VAD inference
+    - [ ] STT inference
+    - [ ] TTS inference
+- [ ] Image model inference
+- [ ] Video model inference
 
 ---
 
 ## The Grimoire
 
-The Grimoire is the official Akio's documentation.
-You can read it [here](https://fastiraz.github.io/grimoire/).
+The Grimoire is the official Akio's documentation. You can read it [here](https://fastiraz.github.io/grimoire/).
 
 ---
 
 ## Installation
 
-You can read the installation instructions in the [Grimoire](https://fastiraz.github.io/grimoire/docs/getting-started/installation).
-
-### Using pipx (recommend)
+### Using cargo (recommend)
 
 ```sh
-pipx install akio
+cargo install --git https://github.com/Fastiraz/akio.git
 ```
-
-### From the repository
-
-```sh
-pipx install git+https://github.com/Fastiraz/akio.git
-```
-### From source
-
-```sh
-
-git clone https://github.com/Fastiraz/akio.git
-cd akio
-
-uv build
-uv venv
-uv pip install dist/*.whl
-uv run -- akio
-```
-
----
-
-<div align="center">
-  <p><code>Coming soon...</code></p>
-</div>
