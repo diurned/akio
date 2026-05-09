@@ -55,3 +55,19 @@ The Grimoire is the official Akio's documentation. You can read it [here](https:
 ```sh
 cargo install --git https://github.com/Fastiraz/akio.git
 ```
+
+---
+
+## Usage
+
+1. Download your first model
+
+```sh
+akio pull ggml-org/Qwen3-8B-GGUF
+```
+
+2. Run the model
+
+```sh
+akio run -m Qwen3-8B-Q4_K_M.gguf
+```
