@@ -6,6 +6,7 @@ use anyhow::{bail, Result};
 use crate::ffi::*;
 use crate::mcp::client::{MCPClient, McpConfig};
 use crate::tools;
+use crate::tui::input::Input;
 
 
 struct Model(*mut llama_model);
@@ -317,15 +318,11 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32) -> Result
     let mut prev_len: i32 = 0;
 
     'outer: loop {
-        print!("\n\n\x1b[34m> \x1b[0m");
-        io::stdout().flush().ok();
+        let user_input = match Input::read_input() {
+            Some(s) => s,
+            None => break,
+        };
 
-        let mut line = String::new();
-        match stdin.lock().read_line(&mut line) {
-            Ok(0) | Err(_) => break,
-            Ok(_) => {}
-        }
-        let user_input = line.trim_end_matches('\n').trim_end_matches('\r').to_owned();
         if user_input.is_empty() {
             break;
         } else if user_input.starts_with('/') {

@@ -5,6 +5,7 @@ mod inference;
 mod mcp;
 mod models;
 mod tools;
+mod tui;
 
 use anyhow::Result;
 use args::{Cli, Commands, McpAction};
