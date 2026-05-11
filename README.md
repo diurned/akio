@@ -50,13 +50,7 @@ The Grimoire is the official Akio's documentation. You can read it [here](https:
 
 ## Installation
 
-### Using curl (recommend)
-
-```sh
-curl -fsSL https://ak.io/install.sh | sh
-```
-
-### Using cargo
+### Using cargo (recommend)
 
 ```sh
 cargo install --git https://github.com/Fastiraz/akio.git
