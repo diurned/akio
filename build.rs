@@ -2,14 +2,35 @@ use std::path::PathBuf;
 
 fn main() {
     // Build llama.cpp using cmake
-    let dst = cmake::Config::new("llama.cpp")
+    let mut cmake_config = cmake::Config::new("llama.cpp");
+    cmake_config
         .build_target("llama")
         .define("LLAMA_BUILD_TESTS", "OFF")
         .define("LLAMA_BUILD_EXAMPLES", "OFF")
         .define("LLAMA_BUILD_SERVER", "OFF")
         .define("LLAMA_OPENSSL", "OFF")
-        .define("BUILD_SHARED_LIBS", "OFF")
-        .build();
+        .define("BUILD_SHARED_LIBS", "OFF");
+
+    // On MSVC the cmake crate always passes /MD (release CRT) regardless of the
+    // Cargo profile, but a cmake Debug configuration still defines _DEBUG which
+    // makes code reference _CrtDbgReport and friends from the debug CRT (MSVCRTD).
+    // Linking against those symbols then fails because Rust uses the release CRT.
+    // Forcing cmake to build in Release mode keeps the two CRTs consistent.
+    #[cfg(target_env = "msvc")]
+    cmake_config.profile("Release");
+
+    // On Linux, disable native CPU feature probing (GGML_NATIVE=ON by default).
+    // GCC 12 on aarch64 detects "+fp16fml" from the native -mcpu flags and
+    // reports __ARM_FEATURE_FP16_VECTOR_ARITHMETIC as defined, but the
+    // always_inline fp16 NEON intrinsics (vfmaq_f16, vaddq_f16, …) then fail
+    // to inline because they require the full "+fp16" target feature rather
+    // than the multiply-accumulate-long variant.  Turning GGML_NATIVE off
+    // leaves no architecture-specific march flags so the fp16 compile-check
+    // correctly fails and the problematic code path is never compiled.
+    #[cfg(target_os = "linux")]
+    cmake_config.define("GGML_NATIVE", "OFF");
+
+    let dst = cmake_config.build();
 
     // Tell cargo where to find the built library
     println!("cargo:rustc-link-search=native={}/build", dst.display());
@@ -17,6 +38,15 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/build/ggml/src/ggml-blas", dst.display());
     println!("cargo:rustc-link-search=native={}/build/ggml/src/ggml-metal", dst.display());
     println!("cargo:rustc-link-search=native={}/build/src", dst.display());
+
+    // On MSVC, cmake places artifacts in a configuration subdirectory.
+    // We always build in Release mode on MSVC (see above).
+    #[cfg(target_env = "msvc")]
+    {
+        println!("cargo:rustc-link-search=native={}/build/Release", dst.display());
+        println!("cargo:rustc-link-search=native={}/build/ggml/src/Release", dst.display());
+        println!("cargo:rustc-link-search=native={}/build/src/Release", dst.display());
+    }
 
     // Link llama and ggml
     println!("cargo:rustc-link-lib=static=llama");
@@ -46,16 +76,25 @@ fn main() {
     #[cfg(target_os = "linux")]
     println!("cargo:rustc-link-lib=stdc++");
 
-    // Link OpenMP (required by ggml-cpu)
+    // Link OpenMP (required by ggml-cpu on Linux)
     #[cfg(target_os = "linux")]
     println!("cargo:rustc-link-lib=gomp");
 
-    // Link pthreads
+    // Link pthreads (Windows uses native Win32 threads, no pthread needed)
+    #[cfg(not(windows))]
     println!("cargo:rustc-link-lib=pthread");
 
     // Rerun if llama.cpp changes
     println!("cargo:rerun-if-changed=llama.cpp/include/llama.h");
     println!("cargo:rerun-if-changed=build.rs");
+
+    // On Windows, locate libclang.dll for bindgen if LIBCLANG_PATH is not already set
+    #[cfg(windows)]
+    setup_libclang_path();
+
+    // On Linux, locate libclang.so for bindgen if LIBCLANG_PATH is not already set
+    #[cfg(target_os = "linux")]
+    setup_libclang_path();
 
     // Generate bindings using bindgen
     let bindings = bindgen::Builder::default()
@@ -116,4 +155,161 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings");
+}
+
+/// On Windows, find and set LIBCLANG_PATH if not already set so bindgen can find libclang.dll.
+#[cfg(windows)]
+fn setup_libclang_path() {
+    if std::env::var("LIBCLANG_PATH").is_ok() {
+        return;
+    }
+    if let Some(dir) = find_libclang_dir() {
+        // set_var is unsafe in Rust 1.87+ due to thread-safety concerns; build scripts
+        // are single-threaded at this point so the call is safe in practice.
+        unsafe { std::env::set_var("LIBCLANG_PATH", &dir) };
+    }
+}
+
+/// Search common locations for the directory containing libclang.dll.
+#[cfg(windows)]
+fn find_libclang_dir() -> Option<PathBuf> {
+    // 1. Look next to clang.exe found on PATH
+    if let Ok(out) = std::process::Command::new("where.exe").arg("clang.exe").output() {
+        if let Ok(s) = std::str::from_utf8(&out.stdout) {
+            for line in s.lines() {
+                let clang = PathBuf::from(line.trim());
+                if let Some(dir) = clang.parent() {
+                    if dir.join("libclang.dll").exists() {
+                        return Some(dir.to_path_buf());
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Common standalone LLVM install paths
+    for base in &[
+        r"C:\Program Files\LLVM\bin",
+        r"C:\Program Files (x86)\LLVM\bin",
+    ] {
+        let p = PathBuf::from(base);
+        if p.join("libclang.dll").exists() {
+            return Some(p);
+        }
+    }
+
+    // 3. Visual Studio bundled LLVM (prefer x64, fall back to arch-neutral)
+    let vs_root = PathBuf::from(r"C:\Program Files\Microsoft Visual Studio");
+    if let Ok(vers) = std::fs::read_dir(&vs_root) {
+        for ver in vers.flatten() {
+            if let Ok(editions) = std::fs::read_dir(ver.path()) {
+                for edition in editions.flatten() {
+                    for arch_suffix in &[r"x64\bin", "bin"] {
+                        let llvm_bin = edition
+                            .path()
+                            .join("VC")
+                            .join("Tools")
+                            .join("Llvm")
+                            .join(arch_suffix);
+                        if llvm_bin.join("libclang.dll").exists() {
+                            return Some(llvm_bin);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    None
+}
+
+/// On Linux, find and set LIBCLANG_PATH if not already set so bindgen can find libclang.so.
+#[cfg(target_os = "linux")]
+fn setup_libclang_path() {
+    if std::env::var("LIBCLANG_PATH").is_ok() {
+        return;
+    }
+    if let Some(dir) = find_libclang_dir() {
+        // set_var is unsafe in Rust 1.87+ due to thread-safety concerns; build scripts
+        // are single-threaded at this point so the call is safe in practice.
+        unsafe { std::env::set_var("LIBCLANG_PATH", &dir) };
+    }
+}
+
+/// Search common locations for the directory containing libclang.so on Linux.
+#[cfg(target_os = "linux")]
+fn find_libclang_dir() -> Option<PathBuf> {
+    // 1. Versioned LLVM installs managed by llvm.sh / apt (e.g. llvm-14 … llvm-20).
+    //    Search highest version first so we prefer the newest installed toolchain.
+    if let Ok(entries) = std::fs::read_dir("/usr/lib") {
+        let mut llvm_dirs: Vec<PathBuf> = entries
+            .flatten()
+            .filter_map(|e| {
+                let name = e.file_name();
+                let s = name.to_string_lossy();
+                if s.starts_with("llvm-") {
+                    let ver: Option<u32> = s["llvm-".len()..].parse().ok();
+                    ver.map(|_| e.path().join("lib"))
+                } else {
+                    None
+                }
+            })
+            .filter(|p| p.is_dir())
+            .collect();
+
+        // Sort descending by version number embedded in the path name.
+        llvm_dirs.sort_by(|a, b| {
+            let ver = |p: &PathBuf| -> u32 {
+                p.parent()
+                    .and_then(|d| d.file_name())
+                    .and_then(|n| n.to_str())
+                    .and_then(|s| s.strip_prefix("llvm-"))
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(0)
+            };
+            ver(b).cmp(&ver(a))
+        });
+
+        for dir in llvm_dirs {
+            if has_libclang(&dir) {
+                return Some(dir);
+            }
+        }
+    }
+
+    // 2. Multiarch lib directories (Debian/Ubuntu).
+    for dir in &[
+        "/usr/lib/aarch64-linux-gnu",
+        "/usr/lib/x86_64-linux-gnu",
+        "/usr/lib/arm-linux-gnueabihf",
+    ] {
+        let p = PathBuf::from(dir);
+        if has_libclang(&p) {
+            return Some(p);
+        }
+    }
+
+    // 3. Generic fallbacks.
+    for dir in &["/usr/lib", "/usr/local/lib", "/usr/lib64"] {
+        let p = PathBuf::from(dir);
+        if has_libclang(&p) {
+            return Some(p);
+        }
+    }
+
+    None
+}
+
+/// Returns true if `dir` contains any file whose name starts with "libclang".
+#[cfg(target_os = "linux")]
+fn has_libclang(dir: &PathBuf) -> bool {
+    std::fs::read_dir(dir)
+        .map(|entries| {
+            entries.flatten().any(|e| {
+                e.file_name()
+                    .to_string_lossy()
+                    .starts_with("libclang")
+            })
+        })
+        .unwrap_or(false)
 }

@@ -1,4 +1,5 @@
 use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
 use std::io::{self, BufRead, Write};
 
 use anyhow::{bail, Result};
@@ -86,7 +87,7 @@ fn token_to_piece(vocab: *const llama_vocab, token: llama_token) -> String {
         llama_token_to_piece(
             vocab,
             token,
-            buf.as_mut_ptr() as *mut i8,
+            buf.as_mut_ptr() as *mut c_char,
             buf.len() as i32,
             0,
             true,
@@ -149,7 +150,7 @@ fn generate(
 }
 
 fn apply_template(
-    tmpl: *const i8,
+    tmpl: *const c_char,
     messages: &[llama_chat_message],
     add_ass: bool,
 ) -> Result<Vec<u8>, String> {
@@ -160,7 +161,7 @@ fn apply_template(
             messages.as_ptr(),
             messages.len(),
             add_ass,
-            buf.as_mut_ptr() as *mut i8,
+            buf.as_mut_ptr() as *mut c_char,
             buf.len() as i32,
         )
     };
@@ -172,7 +173,7 @@ fn apply_template(
                 messages.as_ptr(),
                 messages.len(),
                 add_ass,
-                buf.as_mut_ptr() as *mut i8,
+                buf.as_mut_ptr() as *mut c_char,
                 buf.len() as i32,
             )
         };
