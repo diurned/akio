@@ -18,7 +18,7 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
     ModelEntry {
         repo: "Fastiraz/Qwen3-4B-GGUF",
         filename: "Qwen3-4B-Q4_K_M.gguf",
-    }
+    },
     ModelEntry {
         repo: "Fastiraz/Qwen3-8B-GGUF",
         filename: "Qwen3-8B-Q4_K_M.gguf",
