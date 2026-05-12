@@ -65,6 +65,7 @@ pub enum Commands {
     },
 
     /// List downloaded models
+    #[clap(alias="ls")]
     List {
         /// Show all available GGUF files, not just the repository names
         #[arg(long)]
