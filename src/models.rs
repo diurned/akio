@@ -8,16 +8,28 @@ pub struct ModelEntry {
 
 pub const WHITELISTED_MODELS: &[ModelEntry] = &[
     ModelEntry {
-        repo: "ggml-org/Qwen3-0.6B-GGUF",
+        repo: "Fastiraz/Qwen3-0.6B-GGUF",
         filename: "Qwen3-0.6B-Q4_0.gguf",
     },
     ModelEntry {
-        repo: "ggml-org/gpt-oss-20b-GGUF",
-        filename: "gpt-oss-20b-Q4_0.gguf",
+        repo: "Fastiraz/Qwen3-1.7B-GGUF",
+        filename: "Qwen3-1.7B-Q4_K_M.gguf",
     },
     ModelEntry {
-        repo: "ggml-org/Qwen3-8B-GGUF",
+        repo: "Fastiraz/Qwen3-4B-GGUF",
+        filename: "Qwen3-4B-Q4_K_M.gguf",
+    }
+    ModelEntry {
+        repo: "Fastiraz/Qwen3-8B-GGUF",
         filename: "Qwen3-8B-Q4_K_M.gguf",
+    },
+    ModelEntry {
+        repo: "Fastiraz/Qwen3-14B-GGUF",
+        filename: "Qwen3-14B-Q4_K_M.gguf",
+    },
+    ModelEntry {
+        repo: "Fastiraz/Qwen3-32B-GGUF",
+        filename: "Qwen3-32B-Q4_K_M.gguf",
     },
 ];
 
