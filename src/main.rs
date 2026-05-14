@@ -6,6 +6,7 @@ mod mcp;
 mod models;
 mod tools;
 mod tui;
+mod image;
 
 use anyhow::Result;
 use args::{Cli, Commands, McpAction};
@@ -29,6 +30,11 @@ async fn main() {
             }
             McpAction::Remove { name } => commands::mcp::remove(&name),
         },
+        Commands::Image {
+            model, prompt, height, width, num_steps, seed, output, cpu, negative_prompt, guidance_scale
+        } => {
+            commands::image::run(&model, prompt, height, width, num_steps, seed, output, cpu, negative_prompt, guidance_scale)
+        }
     };
 
     if let Err(e) = result {

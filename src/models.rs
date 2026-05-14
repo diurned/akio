@@ -31,6 +31,10 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
         repo: "Fastiraz/Qwen3-32B-GGUF",
         filename: "Qwen3-32B-Q4_K_M.gguf",
     },
+    ModelEntry {
+        repo: "Tongyi-MAI/Z-Image-Turbo",
+        filename: "",
+    },
 ];
 
 pub fn find_by_repo(repo: &str) -> Option<&'static ModelEntry> {
@@ -48,6 +52,11 @@ pub fn models_dir() -> PathBuf {
 
 pub fn model_path(filename: &str) -> PathBuf {
     models_dir().join(filename)
+}
+
+/// Directory for multi-file models stored by repo name (e.g. "Tongyi-MAI/Z-Image-Turbo").
+pub fn model_repo_dir(repo: &str) -> PathBuf {
+    models_dir().join(repo)
 }
 
 

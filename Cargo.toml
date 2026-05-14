@@ -5,16 +5,26 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.102"
+candle-core = { git = "https://github.com/huggingface/candle.git", version = "0.10.2" }
+candle-nn = { git = "https://github.com/huggingface/candle.git", version = "0.10.2" }
+candle-transformers = { git = "https://github.com/huggingface/candle.git", version = "0.10.2" }
 clap = { version = "4.6.0", features = ["derive"] }
 crossterm = "0.29.0"
 glob = "0.3.3"
 hf-hub = { version = "0.5.0", features = ["tokio"] }
+image = "0.25.10"
 regex = "1.12.3"
 reqwest = { version = "0.13.3", features = ["blocking"] }
 rmcp = { version = "1.5.0", features = ["client", "transport-child-process"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
+tokenizers = { version = "0.23.1", default-features = false, features = ["onig"] }
 tokio = { version = "1.51.1", features = ["full", "rt-multi-thread", "macros"] }
+
+[features]
+cuda = ["candle-core/cuda"]
+metal = ["candle-core/metal", "candle-nn/metal", "candle-transformers/metal"]
+default = []
 
 [build-dependencies]
 cmake   = "0.1"
