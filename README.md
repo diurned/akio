@@ -37,7 +37,7 @@ Akio is a **plug-and-play autonomous AI agent** with **embedded model inference*
     - [ ] VAD inference
     - [ ] STT inference
     - [ ] TTS inference
-- [ ] Image model inference
+- [x] Image model inference
 - [ ] Video model inference
 
 ---
