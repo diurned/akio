@@ -145,8 +145,9 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
     (kv_cache, graph)
 }
 
-/// Total memory estimate (bytes) for loading and running the model at the given context size.
-/// weights ≈ file size + KV cache + arch-specific graph buffers + 256 MiB overhead
+/// Total memory estimate (bytes) for running the model at the given context size.
+/// Model weights are mmap'd so they don't count against working memory.
+/// What we actually need: KV cache + graph buffers + runtime overhead.
 pub fn estimate_memory(path: &str, context_size: u32) -> Result<u64, String> {
     let file_size = std::fs::metadata(path)
         .map_err(|e| format!("cannot stat '{}': {e}", path))?
@@ -158,7 +159,8 @@ pub fn estimate_memory(path: &str, context_size: u32) -> Result<u64, String> {
     let batch: u64 = 512;
 
     let (kv_cache, graph) = graph_size(&meta, context, batch);
-    let overhead: u64 = 256 * 1024 * 1024; // 256 MiB
+    // runtime overhead: scratch buffers, tokenizer, etc.
+    let overhead: u64 = 128 * 1024 * 1024; // 128 MiB
 
     let arch = meta.architecture();
     let blocks = meta.block_count();
@@ -171,42 +173,65 @@ pub fn estimate_memory(path: &str, context_size: u32) -> Result<u64, String> {
         meta.vocab_size()
     );
     eprintln!(
-        "memory estimate: weights={}, kv-cache={}, graph={}, overhead={}",
+        "memory estimate: weights={} (mmap'd), kv-cache={}, graph={}, overhead={}",
         fmt_bytes(file_size),
         fmt_bytes(kv_cache),
         fmt_bytes(graph),
         fmt_bytes(overhead),
     );
 
-    Ok(file_size
-        .saturating_add(kv_cache)
+    // working memory = kv cache + graph + overhead (weights are mmap'd)
+    Ok(kv_cache
         .saturating_add(graph)
         .saturating_add(overhead))
 }
 
 /// Returns Err (with an eprintln) if the estimated requirement exceeds available RAM.
+/// On macOS, only warns (does not block) since macOS has dynamic swap.
 pub fn check_memory(path: &str, context_size: u32) -> Result<(), String> {
     let estimated = estimate_memory(path, context_size)?;
     let mem = get_mem_info()?;
 
     eprintln!(
-        "memory: estimated={}, available={}",
+        "memory: estimated={}, available={}, total={}",
         fmt_bytes(estimated),
         fmt_bytes(mem.available),
+        fmt_bytes(mem.total),
     );
 
     if estimated > mem.available {
-        eprintln!(
-            "\nerror: not enough memory to run this model.\n\
-             \n\
-             Required  (estimated) : {}\n\
-             Available             : {}\n\
-             \n\
-             Try a smaller model or reduce --context-size.",
-            fmt_bytes(estimated),
-            fmt_bytes(mem.available),
-        );
-        return Err("insufficient memory".into());
+        if cfg!(target_os = "macos") {
+            // macOS has dynamic swap and unified memory; just warn.
+            eprintln!(
+                "warning: estimated memory ({}) exceeds available ({}), \
+                 performance may be degraded",
+                fmt_bytes(estimated),
+                fmt_bytes(mem.available),
+            );
+        } else {
+            // Linux/Windows: check against free + swap-like headroom.
+            // Block only if it's way over (>2× available).
+            if estimated > mem.available.saturating_mul(2) {
+                eprintln!(
+                    "\nerror: not enough memory to run this model.\n\
+                     \n\
+                     Required  (estimated) : {}\n\
+                     Available             : {}\n\
+                     \n\
+                     Try a smaller model or reduce --context-size.",
+                    fmt_bytes(estimated),
+                    fmt_bytes(mem.available),
+                );
+                return Err("insufficient memory".into());
+            } else {
+                eprintln!(
+                    "warning: estimated memory ({}) exceeds available ({}), \
+                     performance may be degraded",
+                    fmt_bytes(estimated),
+                    fmt_bytes(mem.available),
+                );
+            }
+        }
     }
 
     Ok(())
