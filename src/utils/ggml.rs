@@ -149,7 +149,7 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
 /// Model weights are mmap'd so they don't count against working memory.
 /// What we actually need: KV cache + graph buffers + runtime overhead.
 pub fn estimate_memory(path: &str, context_size: u32) -> Result<u64, String> {
-    let file_size = std::fs::metadata(path)
+    let _file_size = std::fs::metadata(path)
         .map_err(|e| format!("cannot stat '{}': {e}", path))?
         .len();
 
@@ -162,23 +162,23 @@ pub fn estimate_memory(path: &str, context_size: u32) -> Result<u64, String> {
     // runtime overhead: scratch buffers, tokenizer, etc.
     let overhead: u64 = 128 * 1024 * 1024; // 128 MiB
 
-    let arch = meta.architecture();
-    let blocks = meta.block_count();
-    let emb = meta.embedding_length();
-    let ctx_limit = meta.context_length();
+    let _arch = meta.architecture();
+    let _blocks = meta.block_count();
+    let _emb = meta.embedding_length();
+    let _ctx_limit = meta.context_length();
 
-    eprintln!(
-        "model: arch={arch}, layers={blocks}, embedding={emb}, \
-         max-context={ctx_limit}, vocab={}",
-        meta.vocab_size()
-    );
-    eprintln!(
-        "memory estimate: weights={} (mmap'd), kv-cache={}, graph={}, overhead={}",
-        fmt_bytes(file_size),
-        fmt_bytes(kv_cache),
-        fmt_bytes(graph),
-        fmt_bytes(overhead),
-    );
+    // eprintln!(
+    //     "model: arch={arch}, layers={blocks}, embedding={emb}, \
+    //      max-context={ctx_limit}, vocab={}",
+    //     meta.vocab_size()
+    // );
+    // eprintln!(
+    //     "memory estimate: weights={} (mmap'd), kv-cache={}, graph={}, overhead={}",
+    //     fmt_bytes(file_size),
+    //     fmt_bytes(kv_cache),
+    //     fmt_bytes(graph),
+    //     fmt_bytes(overhead),
+    // );
 
     // working memory = kv cache + graph + overhead (weights are mmap'd)
     Ok(kv_cache
@@ -192,12 +192,12 @@ pub fn check_memory(path: &str, context_size: u32) -> Result<(), String> {
     let estimated = estimate_memory(path, context_size)?;
     let mem = get_mem_info()?;
 
-    eprintln!(
-        "memory: estimated={}, available={}, total={}",
-        fmt_bytes(estimated),
-        fmt_bytes(mem.available),
-        fmt_bytes(mem.total),
-    );
+    // eprintln!(
+    //     "memory: estimated={}, available={}, total={}",
+    //     fmt_bytes(estimated),
+    //     fmt_bytes(mem.available),
+    //     fmt_bytes(mem.total),
+    // );
 
     if estimated > mem.available {
         if cfg!(target_os = "macos") {
