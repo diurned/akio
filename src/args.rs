@@ -68,7 +68,7 @@ pub enum Commands {
     #[clap(alias="ls")]
     List {
         /// Show all available GGUF files, not just the repository names
-        #[arg(long)]
+        #[arg(long = "all", short = 'a')]
         all: bool,
     },
 
