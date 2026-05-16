@@ -72,6 +72,50 @@ pub enum Commands {
         all: bool,
     },
 
+    /// Generate an image from a text prompt
+    #[clap(alias="img")]
+    Image {
+        /// Model to use
+        #[arg(short = 'm', long)]
+        model: String,
+
+        /// Text prompt describing the image to generate
+        #[arg(long)]
+        prompt: String,
+
+        /// The height in pixels of the generated image
+        #[arg(long)]
+        height: Option<usize>,
+
+        /// The width in pixels of the generated image
+        #[arg(long)]
+        width: Option<usize>,
+
+        /// Number of inference steps
+        #[arg(long)]
+        num_steps: Option<usize>,
+
+        /// Random seed for reproducible output
+        #[arg(long)]
+        seed: Option<u64>,
+
+        /// Output image filename
+        #[arg(long)]
+        output: Option<String>,
+
+        /// Run on CPU rather than GPU
+        #[arg(long)]
+        cpu: bool,
+
+        /// Negative prompt to guide generation away from
+        #[arg(long, default_value = "")]
+        negative_prompt: String,
+
+        /// Classifier-free guidance scale
+        #[arg(long)]
+        guidance_scale: Option<f64>,
+    },
+
     /// Manage MCP servers
     Mcp {
         #[command(subcommand)]
