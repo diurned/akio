@@ -32,6 +32,10 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
         filename: "Qwen3-32B-Q4_K_M.gguf",
     },
     ModelEntry {
+        repo: "Qwen/Qwen3-Embedding-0.6B-GGUF",
+        filename: "Qwen3-Embedding-0.6B-Q8_0.gguf",
+    },
+    ModelEntry {
         repo: "Tongyi-MAI/Z-Image-Turbo",
         filename: "",
     },

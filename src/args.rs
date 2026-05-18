@@ -116,6 +116,22 @@ pub enum Commands {
         guidance_scale: Option<f64>,
     },
 
+    /// Generate text embeddings from input texts
+    #[clap(alias="embed")]
+    Embedding {
+        /// Path to the GGUF embedding model file
+        #[arg(short = 'm')]
+        model: String,
+
+        /// Input texts to embed
+        #[arg(required = true)]
+        inputs: Vec<String>,
+
+        /// Number of layers to offload to GPU
+        #[arg(long = "ngl", default_value_t = 99)]
+        n_gpu_layers: i32,
+    },
+
     /// Manage MCP servers
     Mcp {
         #[command(subcommand)]

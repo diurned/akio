@@ -36,6 +36,9 @@ async fn main() {
         } => {
             commands::image::run(&model, prompt, height, width, num_steps, seed, output, cpu, negative_prompt, guidance_scale)
         }
+        Commands::Embedding { model, inputs, n_gpu_layers } => {
+            commands::embedding::embedding(&model, &inputs, n_gpu_layers)
+        }
     };
 
     if let Err(e) = result {
