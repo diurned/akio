@@ -1,5 +1,4 @@
-use std::ffi::{CStr, CString};
-use std::os::raw::c_char;
+use std::ffi::CString;
 
 use anyhow::{bail, Result};
 
@@ -33,16 +32,7 @@ impl Drop for Batch {
     }
 }
 
-unsafe extern "C" fn log_callback(
-    level: ggml_log_level,
-    text: *const c_char,
-    _user_data: *mut ::std::os::raw::c_void,
-) {
-    if level >= ggml_log_level_GGML_LOG_LEVEL_ERROR && !text.is_null() {
-        let s = CStr::from_ptr(text).to_string_lossy();
-        eprint!("{s}");
-    }
-}
+use crate::inference::log as llama_log;
 
 fn tokenize(vocab: *const llama_vocab, text: &str) -> Vec<llama_token> {
     let c_text = CString::new(text).expect("text contains null byte");
@@ -157,7 +147,7 @@ pub fn run_embedding(
     inputs: &[String],
     n_gpu_layers: i32,
 ) -> Result<Vec<Vec<f32>>> {
-    unsafe { llama_log_set(Some(log_callback), std::ptr::null_mut()) };
+    unsafe { llama_log_set(Some(llama_log::log_callback), std::ptr::null_mut()) };
     unsafe { ggml_backend_load_all() };
 
     let mut model_params = unsafe { llama_model_default_params() };

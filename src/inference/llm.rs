@@ -1,4 +1,4 @@
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
 use std::os::raw::c_char;
 use std::io::{self, BufRead, Write};
 
@@ -186,16 +186,7 @@ fn apply_template(
     Ok(buf)
 }
 
-unsafe extern "C" fn log_callback(
-    level: ggml_log_level,
-    text: *const ::std::os::raw::c_char,
-    _user_data: *mut ::std::os::raw::c_void,
-) {
-    if level >= ggml_log_level_GGML_LOG_LEVEL_ERROR && !text.is_null() {
-        let s = CStr::from_ptr(text).to_string_lossy();
-        eprint!("{s}");
-    }
-}
+use crate::inference::log as llama_log;
 
 /// Describes an MCP tool for inclusion in the system prompt.
 struct McpToolInfo {
@@ -226,8 +217,9 @@ fn build_mcp_tools_prompt(mcp_tools: &[McpToolInfo]) -> String {
     format!("\n\n# MCP server tools\n\n{tools_str}")
 }
 
-pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32) -> Result<()> {
-    unsafe { llama_log_set(Some(log_callback), std::ptr::null_mut()) };
+pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32, verbose: &str) -> Result<()> {
+    llama_log::set_min_level(crate::utils::log::parse_log_level(verbose));
+    unsafe { llama_log_set(Some(llama_log::log_callback), std::ptr::null_mut()) };
 
     unsafe { ggml_backend_load_all() };
 

@@ -56,6 +56,10 @@ pub enum Commands {
         /// Number of layers to offload to GPU
         #[arg(long = "ngl", default_value_t = 99)]
         n_gpu_layers: i32,
+
+        /// Set log verbosity (none, debug, info, warn, error)
+        #[arg(long, default_value = "error", value_parser = ["none", "debug", "info", "warn", "error"])]
+        verbose: String,
     },
 
     /// Remove a previously downloaded model
@@ -130,6 +134,10 @@ pub enum Commands {
         /// Number of layers to offload to GPU
         #[arg(long = "ngl", default_value_t = 99)]
         n_gpu_layers: i32,
+
+        /// Set log verbosity (none, debug, info, warn, error)
+        #[arg(long, default_value = "error", value_parser = ["none", "debug", "info", "warn", "error"])]
+        verbose: String,
     },
 
     /// Manage MCP servers

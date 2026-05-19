@@ -19,8 +19,8 @@ async fn main() {
 
     let result: Result<()> = match cli.command {
         Commands::Pull { repo } => commands::pull::pull(&repo).await,
-        Commands::Run { model, context_size, n_gpu_layers } => {
-            commands::run::run(&model, context_size, n_gpu_layers).await
+        Commands::Run { model, context_size, n_gpu_layers, verbose } => {
+            commands::run::run(&model, context_size, n_gpu_layers, &verbose).await
         }
         Commands::Rm { repo } => commands::rm::rm(&repo),
         Commands::List { all } => commands::list::list(all),
@@ -36,8 +36,8 @@ async fn main() {
         } => {
             commands::image::run(&model, prompt, height, width, num_steps, seed, output, cpu, negative_prompt, guidance_scale)
         }
-        Commands::Embedding { model, inputs, n_gpu_layers } => {
-            commands::embedding::embedding(&model, &inputs, n_gpu_layers)
+        Commands::Embedding { model, inputs, n_gpu_layers, verbose } => {
+            commands::embedding::embedding(&model, &inputs, n_gpu_layers, &verbose)
         }
     };
 
