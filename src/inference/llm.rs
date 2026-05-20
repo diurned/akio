@@ -342,6 +342,33 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32, verbose: 
                     continue 'outer;
                 }
             }
+        } else if user_input.starts_with('!') {
+            let output = std::process::Command::new("sh")
+                .arg("-c")
+                .arg(&user_input[1..])
+                .output()
+                .expect("failed to execute");
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+
+            print!("{}", stdout);
+            if !stderr.is_empty() {
+                eprint!("{}", stderr);
+            }
+
+            history.push(("user".into(), user_input));
+
+            let mut command_output = stdout.to_string();
+            if !stderr.is_empty() {
+                if !command_output.is_empty() {
+                    command_output.push('\n');
+                }
+                command_output.push_str(&stderr);
+            }
+            if !command_output.is_empty() {
+                history.push(("user".into(), command_output));
+            }
+            continue 'outer;
         }
 
         history.push(("user".into(), user_input));
