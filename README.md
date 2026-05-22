@@ -63,7 +63,7 @@ cargo install --git https://github.com/Fastiraz/akio.git
 1. Download your first model
 
 ```sh
-akio pull ggml-org/Qwen3-8B-GGUF
+akio pull Fastiraz/Qwen3-8B-GGUF
 ```
 
 2. Run the model
