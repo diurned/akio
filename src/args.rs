@@ -150,6 +150,7 @@ pub enum Commands {
 #[derive(Subcommand)]
 pub enum McpAction {
     /// List registered MCP servers and their tools
+    #[clap(alias="ls")]
     List,
 
     /// Add an MCP server
@@ -168,6 +169,7 @@ pub enum McpAction {
     },
 
     /// Remove a registered MCP server
+    #[clap(alias="rm")]
     Remove {
         /// Name of the MCP server to remove
         name: String,
