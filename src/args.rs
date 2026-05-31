@@ -60,6 +60,10 @@ pub enum Commands {
         /// Set log verbosity (none, debug, info, warn, error)
         #[arg(long, default_value = "error", value_parser = ["none", "debug", "info", "warn", "error"])]
         verbose: String,
+
+        /// Optional prompt for non-interactive mode
+        // #[arg(trailing_var_arg = true)]
+        prompt: Vec<String>,
     },
 
     /// Remove a previously downloaded model
