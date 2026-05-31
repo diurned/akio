@@ -30,6 +30,10 @@ fn main() {
     #[cfg(target_os = "linux")]
     cmake_config.define("GGML_NATIVE", "OFF");
 
+    // Enable CUDA backend when the "cuda" feature is active.
+    #[cfg(feature = "cuda")]
+    cmake_config.define("GGML_CUDA", "ON");
+
     let dst = cmake_config.build();
 
     // Tell cargo where to find the built library
@@ -37,6 +41,7 @@ fn main() {
     println!("cargo:rustc-link-search=native={}/build/ggml/src", dst.display());
     println!("cargo:rustc-link-search=native={}/build/ggml/src/ggml-blas", dst.display());
     println!("cargo:rustc-link-search=native={}/build/ggml/src/ggml-metal", dst.display());
+    println!("cargo:rustc-link-search=native={}/build/ggml/src/ggml-cuda", dst.display());
     println!("cargo:rustc-link-search=native={}/build/src", dst.display());
 
     // On MSVC, cmake places artifacts in a configuration subdirectory.
@@ -71,6 +76,16 @@ fn main() {
         println!("cargo:rustc-link-lib=framework=Metal");
         println!("cargo:rustc-link-lib=framework=Foundation");
         println!("cargo:rustc-link-lib=framework=QuartzCore");
+    }
+
+    // On Linux with CUDA, link ggml-cuda and the CUDA runtime libraries.
+    #[cfg(all(target_os = "linux", feature = "cuda"))]
+    {
+        println!("cargo:rustc-link-lib=static=ggml-cuda");
+        println!("cargo:rustc-link-lib=cudart");
+        println!("cargo:rustc-link-lib=cublas");
+        println!("cargo:rustc-link-lib=cublasLt");
+        println!("cargo:rustc-link-lib=cuda");
     }
 
     #[cfg(target_os = "linux")]
