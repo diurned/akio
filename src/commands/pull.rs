@@ -16,14 +16,14 @@ const Z_IMAGE_FILES: &[&str] = &[
     "vae/diffusion_pytorch_model.safetensors",
 ];
 
-pub async fn pull(repo: &str) -> Result<()> {
-    let entry = crate::models::find_by_repo(repo).ok_or_else(|| {
+pub async fn pull(name: &str) -> Result<()> {
+    let entry = crate::models::find_by_any(name).ok_or_else(|| {
         let list = crate::models::WHITELISTED_MODELS
             .iter()
-            .map(|m| format!("  {}", m.repo))
+            .map(|m| format!("  {}  ({})", m.repo, m.filename))
             .collect::<Vec<_>>()
             .join("\n");
-        anyhow::anyhow!("'{}' is not in the model whitelist.\n\nAvailable models:\n{}", repo, list)
+        anyhow::anyhow!("'{}' is not in the model whitelist.\n\nAvailable models:\n{}", name, list)
     })?;
 
     // Multi-file model (e.g. Z-Image-Turbo): filename is empty
