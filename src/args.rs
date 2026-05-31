@@ -76,7 +76,7 @@ pub enum Commands {
         all: bool,
     },
 
-    /// Generate an image from a text prompt
+    /// Generate an image from a text prompt (experimental)
     #[clap(alias="img")]
     Image {
         /// Model to use
