@@ -186,6 +186,130 @@ fn apply_template(
     Ok(buf)
 }
 
+fn build_prompt(
+    tmpl: *const c_char,
+    history: &[(String, String)],
+    prev_len: i32,
+) -> Result<(String, i32)> {
+    let mut c_messages: Vec<llama_chat_message> = Vec::new();
+    let mut owned: Vec<(CString, CString)> = Vec::new();
+    for (role, content) in history {
+        let role_cs = CString::new(role.as_str()).expect("role contains null byte");
+        let content_cs = CString::new(content.as_str()).expect("content contains null byte");
+        c_messages.push(llama_chat_message {
+            role: role_cs.as_ptr(),
+            content: content_cs.as_ptr(),
+        });
+        owned.push((role_cs, content_cs));
+    }
+
+    let formatted = apply_template(tmpl, &c_messages, true).unwrap_or_else(|e| {
+        eprintln!("{e}");
+        std::process::exit(1);
+    });
+
+    let new_len = formatted.iter().position(|&b| b == 0).unwrap_or(formatted.len()) as i32;
+    let prompt_str = String::from_utf8_lossy(&formatted[prev_len as usize..new_len as usize]).into_owned();
+    Ok((prompt_str, new_len))
+}
+
+fn update_prev_len(
+    tmpl: *const c_char,
+    history: &[(String, String)],
+) -> Result<i32> {
+    let mut c_messages: Vec<llama_chat_message> = Vec::new();
+    let mut owned: Vec<(CString, CString)> = Vec::new();
+    for (role, content) in history {
+        let role_cs = CString::new(role.as_str()).expect("role contains null byte");
+        let content_cs = CString::new(content.as_str()).expect("content contains null byte");
+        c_messages.push(llama_chat_message {
+            role: role_cs.as_ptr(),
+            content: content_cs.as_ptr(),
+        });
+        owned.push((role_cs, content_cs));
+    }
+    let prev_len = unsafe {
+        llama_chat_apply_template(
+            tmpl,
+            c_messages.as_ptr(),
+            c_messages.len(),
+            false,
+            std::ptr::null_mut(),
+            0,
+        )
+    };
+    if prev_len < 0 {
+        bail!("failed to apply the chat template");
+    }
+    Ok(prev_len)
+}
+
+async fn execute_tool_calls(
+    tool_calls: &[tools::ToolCall],
+    registry: &tools::ToolRegistry,
+    mcp_tools: &[McpToolInfo],
+    mcp_clients: &[(String, MCPClient)],
+    history: &mut Vec<(String, String)>,
+) {
+    let stdin = io::stdin();
+    for call in tool_calls {
+        let args_display = serde_json::to_string_pretty(&call.arguments)
+            .unwrap_or_else(|_| call.arguments.to_string());
+
+        println!(
+            "\n\x1b[91m\n[tool call] {} ({})\x1b[0m",
+            call.name, args_display
+        );
+        print!("\x1b[91mRun this tool? [y/N] \x1b[0m");
+        io::stdout().flush().ok();
+
+        let mut approval = String::new();
+        match stdin.lock().read_line(&mut approval) {
+            Ok(0) | Err(_) => {
+                println!("\x1b[31m[tool skipped — no input]\x1b[0m");
+                history.push((
+                    "tool".into(),
+                    format!("error: user declined to run tool `{}`", call.name),
+                ));
+                continue;
+            }
+            Ok(_) => {}
+        }
+
+        let approved = approval.trim().eq_ignore_ascii_case("y");
+        if !approved {
+            println!("\x1b[31m[tool skipped by user]\x1b[0m");
+            history.push((
+                "tool".into(),
+                format!("error: user declined to run tool `{}`", call.name),
+            ));
+            continue;
+        }
+
+        let result = if let Some(tool) = registry.find(&call.name) {
+            match tool.execute(call.arguments.clone()) {
+                Ok(output) => output,
+                Err(e) => format!("error: {e}"),
+            }
+        } else if let Some(mcp_info) = mcp_tools.iter().find(|t| t.tool_name == call.name) {
+            if let Some((_name, client)) = mcp_clients.iter().find(|(n, _)| *n == mcp_info.server_name) {
+                match client.call_tool(&call.name, call.arguments.clone()).await {
+                    Ok(output) => output,
+                    Err(e) => format!("error: {e}"),
+                }
+            } else {
+                format!("error: MCP server '{}' not connected", mcp_info.server_name)
+            }
+        } else {
+            format!("error: unknown tool `{}`", call.name)
+        };
+
+        println!("\n\x1b[35m[tool result]\n{result}\x1b[0m");
+
+        history.push(("tool".into(), result));
+    }
+}
+
 use crate::inference::log as llama_log;
 
 /// Describes an MCP tool for inclusion in the system prompt.
@@ -217,7 +341,7 @@ fn build_mcp_tools_prompt(mcp_tools: &[McpToolInfo]) -> String {
     format!("\n\n# MCP server tools\n\n{tools_str}")
 }
 
-pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32, verbose: &str) -> Result<()> {
+pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32, verbose: &str, prompt: Option<&str>) -> Result<()> {
     llama_log::set_min_level(crate::utils::log::parse_log_level(verbose));
     unsafe { llama_log_set(Some(llama_log::log_callback), std::ptr::null_mut()) };
 
@@ -307,8 +431,32 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32, verbose: 
     history.push(("system".into(), system_prompt));
 
     let tmpl = unsafe { llama_model_chat_template(model.0, std::ptr::null()) };
-    let stdin = io::stdin();
     let mut prev_len: i32 = 0;
+
+    // Non-interactive mode: single prompt, generate response, and exit
+    if let Some(prompt_text) = prompt {
+        history.push(("user".into(), prompt_text.to_string()));
+
+        loop {
+            let (prompt_str, _new_len) = build_prompt(tmpl, &history, prev_len)?;
+            let response = generate(&ctx, vocab, &smpl, &prompt_str, false);
+            history.push(("assistant".into(), response.clone()));
+            prev_len = update_prev_len(tmpl, &history)?;
+
+            let tool_calls = tools::parse_tool_calls(&response);
+            if tool_calls.is_empty() {
+                break;
+            }
+            execute_tool_calls(&tool_calls, &registry, &mcp_tools, &mcp_clients, &mut history).await;
+        }
+
+        println!();
+
+        for (_name, client) in mcp_clients {
+            let _ = client.cleanup().await;
+        }
+        return Ok(());
+    }
 
     'outer: loop {
         let user_input = match Input::read_input() {
@@ -374,125 +522,17 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32, verbose: 
         history.push(("user".into(), user_input));
 
         loop {
-            let mut c_messages: Vec<llama_chat_message> = Vec::new();
-            let mut owned: Vec<(CString, CString)> = Vec::new();
-
-            for (role, content) in &history {
-                let role_cs = CString::new(role.as_str()).expect("role contains null byte");
-                let content_cs =
-                    CString::new(content.as_str()).expect("content contains null byte");
-                c_messages.push(llama_chat_message {
-                    role: role_cs.as_ptr(),
-                    content: content_cs.as_ptr(),
-                });
-                owned.push((role_cs, content_cs));
-            }
-
-            let formatted = apply_template(tmpl, &c_messages, true).unwrap_or_else(|e| {
-                eprintln!("{e}");
-                std::process::exit(1);
-            });
-
-            let new_len = formatted.iter().position(|&b| b == 0).unwrap_or(formatted.len()) as i32;
-            let prompt = String::from_utf8_lossy(&formatted[prev_len as usize..new_len as usize])
-                .to_owned();
-
+            let (prompt_str, _new_len) = build_prompt(tmpl, &history, prev_len)?;
             io::stdout().flush().ok();
-            let response = generate(&ctx, vocab, &smpl, &prompt, false);
-
+            let response = generate(&ctx, vocab, &smpl, &prompt_str, false);
             history.push(("assistant".into(), response.clone()));
-
-            {
-                let mut c_msgs2: Vec<llama_chat_message> = Vec::new();
-                let mut owned2: Vec<(CString, CString)> = Vec::new();
-                for (role, content) in &history {
-                    let role_cs = CString::new(role.as_str()).expect("role contains null byte");
-                    let content_cs =
-                        CString::new(content.as_str()).expect("content contains null byte");
-                    c_msgs2.push(llama_chat_message {
-                        role: role_cs.as_ptr(),
-                        content: content_cs.as_ptr(),
-                    });
-                    owned2.push((role_cs, content_cs));
-                }
-                prev_len = unsafe {
-                    llama_chat_apply_template(
-                        tmpl,
-                        c_msgs2.as_ptr(),
-                        c_msgs2.len(),
-                        false,
-                        std::ptr::null_mut(),
-                        0,
-                    )
-                };
-                if prev_len < 0 {
-                    bail!("failed to apply the chat template");
-                }
-            }
+            prev_len = update_prev_len(tmpl, &history)?;
 
             let tool_calls = tools::parse_tool_calls(&response);
             if tool_calls.is_empty() {
                 break;
             }
-
-            for call in &tool_calls {
-                let args_display = serde_json::to_string_pretty(&call.arguments)
-                    .unwrap_or_else(|_| call.arguments.to_string());
-
-                println!(
-                    "\n\x1b[91m\n[tool call] {} ({})\x1b[0m",
-                    call.name, args_display
-                );
-                print!("\x1b[91mRun this tool? [y/N] \x1b[0m");
-                io::stdout().flush().ok();
-
-                let mut approval = String::new();
-                match stdin.lock().read_line(&mut approval) {
-                    Ok(0) | Err(_) => {
-                        println!("\x1b[31m[tool skipped — no input]\x1b[0m");
-                        history.push((
-                            "tool".into(),
-                            format!("error: user declined to run tool `{}`", call.name),
-                        ));
-                        continue;
-                    }
-                    Ok(_) => {}
-                }
-
-                let approved = approval.trim().eq_ignore_ascii_case("y");
-                if !approved {
-                    println!("\x1b[31m[tool skipped by user]\x1b[0m");
-                    history.push((
-                        "tool".into(),
-                        format!("error: user declined to run tool `{}`", call.name),
-                    ));
-                    continue;
-                }
-
-                // Try standard tools first, then MCP tools
-                let result = if let Some(tool) = registry.find(&call.name) {
-                    match tool.execute(call.arguments.clone()) {
-                        Ok(output) => output,
-                        Err(e) => format!("error: {e}"),
-                    }
-                } else if let Some(mcp_info) = mcp_tools.iter().find(|t| t.tool_name == call.name) {
-                    // Find the client that owns this tool
-                    if let Some((_name, client)) = mcp_clients.iter().find(|(n, _)| *n == mcp_info.server_name) {
-                        match client.call_tool(&call.name, call.arguments.clone()).await {
-                            Ok(output) => output,
-                            Err(e) => format!("error: {e}"),
-                        }
-                    } else {
-                        format!("error: MCP server '{}' not connected", mcp_info.server_name)
-                    }
-                } else {
-                    format!("error: unknown tool `{}`", call.name)
-                };
-
-                println!("\n\x1b[35m[tool result]\n{result}\x1b[0m");
-
-                history.push(("tool".into(), result));
-            }
+            execute_tool_calls(&tool_calls, &registry, &mcp_tools, &mcp_clients, &mut history).await;
         }
 
         continue 'outer;
