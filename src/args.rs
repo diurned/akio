@@ -21,11 +21,8 @@ const STYLES: Styles = Styles::styled()
     long_about = "Never depends on a model provider or Google a command again.\nAkio is a plug-and-play autonomous AI agent that can assist you.\n\n\
       EXAMPLES:
         akio pull Fastiraz/Qwen3-0.6B-GGUF
-        akio pull Qwen3-0.6B-Q4_0.gguf
         akio run -m Fastiraz/Qwen3-0.6B-GGUF -c 8192
-        akio run -m Qwen3-0.6B-Q4_0.gguf -c 8192
         akio rm Fastiraz/Qwen3-0.6B-GGUF
-        akio rm Qwen3-0.6B-Q4_0.gguf
         akio list
         akio list --all
         akio mcp list
