@@ -20,9 +20,9 @@ const STYLES: Styles = Styles::styled()
     about = "Local autonomous AI agent with embedded model inference.",
     long_about = "Never depends on a model provider or Google a command again.\nAkio is a plug-and-play autonomous AI agent that can assist you.\n\n\
       EXAMPLES:
-        akio pull ggml-org/Qwen3-0.6B-GGUF
-        akio run -m Qwen3-0.6B-Q4_0.gguf -c 8192
-        akio rm ggml-org/Qwen3-0.6B-GGUF
+        akio pull Fastiraz/Qwen3-0.6B-GGUF
+        akio run -m Fastiraz/Qwen3-0.6B-GGUF -c 8192
+        akio rm Fastiraz/Qwen3-0.6B-GGUF
         akio list
         akio list --all
         akio mcp list
@@ -39,13 +39,13 @@ pub struct Cli {
 pub enum Commands {
     /// Download a model from a Hugging Face repository
     Pull {
-        /// Hugging Face repository (e.g. ggml-org/Qwen3-0.6B-GGUF)
-        repo: String,
+        /// Model name: HuggingFace repo (e.g. Fastiraz/Qwen3-0.6B-GGUF) or filename (e.g. Qwen3-0.6B-Q4_0.gguf)
+        model: String,
     },
 
     /// Start an interactive chat session with a model
     Run {
-        /// Path to the GGUF model file
+        /// Model name: HuggingFace repo (e.g. Fastiraz/Qwen3-0.6B-GGUF) or filename (e.g. Qwen3-0.6B-Q4_0.gguf)
         #[arg(short = 'm')]
         model: String,
 
@@ -60,12 +60,16 @@ pub enum Commands {
         /// Set log verbosity (none, debug, info, warn, error)
         #[arg(long, default_value = "error", value_parser = ["none", "debug", "info", "warn", "error"])]
         verbose: String,
+
+        /// Optional prompt for non-interactive mode
+        // #[arg(trailing_var_arg = true)]
+        prompt: Vec<String>,
     },
 
     /// Remove a previously downloaded model
     Rm {
-        /// Hugging Face repository to remove (e.g. ggml-org/Qwen3-0.6B-GGUF)
-        repo: String,
+        /// Model name: HuggingFace repo (e.g. Fastiraz/Qwen3-0.6B-GGUF) or filename (e.g. Qwen3-0.6B-Q4_0.gguf)
+        model: String,
     },
 
     /// List downloaded models
@@ -76,7 +80,7 @@ pub enum Commands {
         all: bool,
     },
 
-    /// Generate an image from a text prompt
+    /// Generate an image from a text prompt (experimental)
     #[clap(alias="img")]
     Image {
         /// Model to use
@@ -123,7 +127,7 @@ pub enum Commands {
     /// Generate text embeddings from input texts
     #[clap(alias="embed")]
     Embedding {
-        /// Path to the GGUF embedding model file
+        /// Model name: HuggingFace repo (e.g. Fastiraz/Qwen3-Embedding-0.6B-GGUF) or filename (e.g. Qwen3-Embedding-0.6B-Q8_0.gguf)
         #[arg(short = 'm')]
         model: String,
 
@@ -150,6 +154,7 @@ pub enum Commands {
 #[derive(Subcommand)]
 pub enum McpAction {
     /// List registered MCP servers and their tools
+    #[clap(alias="ls")]
     List,
 
     /// Add an MCP server
@@ -168,6 +173,7 @@ pub enum McpAction {
     },
 
     /// Remove a registered MCP server
+    #[clap(alias="rm")]
     Remove {
         /// Name of the MCP server to remove
         name: String,

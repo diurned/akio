@@ -18,11 +18,12 @@ async fn main() {
     let cli = Cli::parse();
 
     let result: Result<()> = match cli.command {
-        Commands::Pull { repo } => commands::pull::pull(&repo).await,
-        Commands::Run { model, context_size, n_gpu_layers, verbose } => {
-            commands::run::run(&model, context_size, n_gpu_layers, &verbose).await
+        Commands::Pull { model } => commands::pull::pull(&model).await,
+        Commands::Run { model, context_size, n_gpu_layers, verbose, prompt } => {
+            let prompt = if prompt.is_empty() { None } else { Some(prompt.join(" ")) };
+            commands::run::run(&model, context_size, n_gpu_layers, &verbose, prompt.as_deref()).await
         }
-        Commands::Rm { repo } => commands::rm::rm(&repo),
+        Commands::Rm { model } => commands::rm::rm(&model),
         Commands::List { all } => commands::list::list(all),
         Commands::Mcp { action } => match action {
             McpAction::List => commands::mcp::list().await,

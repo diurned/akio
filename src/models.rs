@@ -32,6 +32,10 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
         filename: "Qwen3-32B-Q4_K_M.gguf",
     },
     ModelEntry {
+        repo: "Fastiraz/Qwen3.5-9B-GGUF",
+        filename: "Qwen3.5-9B-Q4_K_M.gguf",
+    },
+    ModelEntry {
         repo: "Fastiraz/Qwen3-Embedding-0.6B-GGUF",
         filename: "Qwen3-Embedding-0.6B-Q8_0.gguf",
     },
@@ -43,6 +47,16 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
 
 pub fn find_by_repo(repo: &str) -> Option<&'static ModelEntry> {
     WHITELISTED_MODELS.iter().find(|m| m.repo == repo)
+}
+
+pub fn find_by_filename(filename: &str) -> Option<&'static ModelEntry> {
+    WHITELISTED_MODELS.iter().find(|m| m.filename == filename)
+}
+
+/// Resolve a model identifier that can be either a HuggingFace repo path or a filename.
+/// Returns the corresponding ModelEntry if found.
+pub fn find_by_any(name: &str) -> Option<&'static ModelEntry> {
+    find_by_repo(name).or_else(|| find_by_filename(name))
 }
 
 
@@ -65,10 +79,20 @@ pub fn model_repo_dir(repo: &str) -> PathBuf {
 
 
 pub fn resolve_model(name: &str) -> PathBuf {
+    // If it's an absolute/relative path that exists, use it directly
     let p = PathBuf::from(name);
     if p.exists() {
-        p
-    } else {
-        model_path(name)
+        return p;
     }
+
+    // If it looks like a HuggingFace repo (contains '/'), resolve to filename
+    if let Some(entry) = find_by_repo(name) {
+        if !entry.filename.is_empty() {
+            return model_path(entry.filename);
+        }
+        return model_repo_dir(entry.repo);
+    }
+
+    // Otherwise treat as a filename
+    model_path(name)
 }
