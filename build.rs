@@ -27,7 +27,7 @@ fn main() {
     // than the multiply-accumulate-long variant.  Turning GGML_NATIVE off
     // leaves no architecture-specific march flags so the fp16 compile-check
     // correctly fails and the problematic code path is never compiled.
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
     cmake_config.define("GGML_NATIVE", "OFF");
 
     // Enable CUDA backend when the "cuda" feature is active.
