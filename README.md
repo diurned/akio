@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Fastiraz/akio/refs/heads/dev/assets/logo.png" width="250">
+  <img src="./assets/logo.png" width="250">
 </div>
 
 <div align="center">
