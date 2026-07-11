@@ -19,9 +19,9 @@ async fn main() {
 
     let result: Result<()> = match cli.command {
         Commands::Pull { model } => commands::pull::pull(&model).await,
-        Commands::Run { model, context_size, n_gpu_layers, verbose, prompt } => {
+        Commands::Run { model, context_size, batch_size, n_gpu_layers, verbose, prompt } => {
             let prompt = if prompt.is_empty() { None } else { Some(prompt.join(" ")) };
-            commands::run::run(&model, context_size, n_gpu_layers, &verbose, prompt.as_deref()).await
+            commands::run::run(&model, context_size, batch_size, n_gpu_layers, &verbose, prompt.as_deref()).await
         }
         Commands::Rm { model } => commands::rm::rm(&model),
         Commands::List { all } => commands::list::list(all),

@@ -113,29 +113,42 @@ fn generate(
 
     let prompt_tokens = tokenize(vocab, prompt, is_first);
 
-    let mut batch = unsafe {
-        llama_batch_get_one(prompt_tokens.as_ptr() as *mut i32, prompt_tokens.len() as i32)
-    };
+    let n_ctx = unsafe { llama_n_ctx(ctx.0) } as i32;
+    let n_batch = unsafe { llama_n_batch(ctx.0) } as usize;
 
-    loop {
-        let n_ctx = unsafe { llama_n_ctx(ctx.0) } as i32;
+    let check_ctx = |n_new: i32| {
         let n_used = unsafe { llama_memory_seq_pos_max(llama_get_memory(ctx.0), 0) } + 1;
-        if n_used + batch.n_tokens > n_ctx {
+        if n_used + n_new > n_ctx {
             eprintln!("\ncontext size exceeded");
             std::process::exit(0);
         }
+    };
 
+    // llama_batch_get_one only sets logits=true on the last token of
+    // whatever slice it's given, so decoding chunk-by-chunk and sampling
+    // only after the final chunk is correct.
+    let mut offset = 0usize;
+    while offset < prompt_tokens.len() {
+        let end = (offset + n_batch).min(prompt_tokens.len());
+        let chunk = &prompt_tokens[offset..end];
+
+        check_ctx(chunk.len() as i32);
+
+        let batch = unsafe {
+            llama_batch_get_one(chunk.as_ptr() as *mut i32, chunk.len() as i32)
+        };
         let ret = unsafe { llama_decode(ctx.0, batch) };
         if ret != 0 {
             panic!("failed to decode, ret = {ret}");
         }
+        offset = end;
+    }
 
+    loop {
         let new_token = unsafe { llama_sampler_sample(smpl.0, ctx.0, -1) };
-
         if unsafe { llama_vocab_is_eog(vocab, new_token) } {
             break;
         }
-
         let piece = token_to_piece(vocab, new_token);
         if !silent {
             print!("{piece}");
@@ -143,7 +156,12 @@ fn generate(
         }
         response.push_str(&piece);
 
-        batch = unsafe { llama_batch_get_one(&new_token as *const i32 as *mut i32, 1) };
+        check_ctx(1);
+        let batch = unsafe { llama_batch_get_one(&new_token as *const i32 as *mut i32, 1) };
+        let ret = unsafe { llama_decode(ctx.0, batch) };
+        if ret != 0 {
+            panic!("failed to decode, ret = {ret}");
+        }
     }
 
     response
@@ -341,7 +359,7 @@ fn build_mcp_tools_prompt(mcp_tools: &[McpToolInfo]) -> String {
     format!("\n\n# MCP server tools\n\n{tools_str}")
 }
 
-pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32, verbose: &str, prompt: Option<&str>) -> Result<()> {
+pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i32, verbose: &str, prompt: Option<&str>) -> Result<()> {
     llama_log::set_min_level(crate::utils::log::parse_log_level(verbose));
     unsafe { llama_log_set(Some(llama_log::log_callback), std::ptr::null_mut()) };
 
@@ -380,7 +398,7 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, n_gpu_layers: i32, verbose: 
 
     let mut ctx_params = unsafe { llama_context_default_params() };
     ctx_params.n_ctx = n_ctx;
-    ctx_params.n_batch = n_ctx;
+    ctx_params.n_batch = b_ctx;
 
     let raw_ctx = unsafe { llama_init_from_model(model.0, ctx_params) };
     if raw_ctx.is_null() {

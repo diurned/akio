@@ -50,8 +50,12 @@ pub enum Commands {
         model: String,
 
         /// Context window size in tokens
-        #[arg(short = 'c', default_value_t = 8192)]
+        #[arg(short = 'c', default_value_t = 2048)]
         context_size: u32,
+
+        /// Batch size in tokens
+        #[arg(short = 'b', default_value_t = 512)]
+        batch_size: u32,
 
         /// Number of layers to offload to GPU
         #[arg(long = "ngl", default_value_t = 99)]
