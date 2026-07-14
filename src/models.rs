@@ -40,6 +40,14 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
         filename: "Qwen3-Embedding-0.6B-Q8_0.gguf",
     },
     ModelEntry {
+        repo: "Fastiraz/Qwen3-Embedding-4B-GGUF",
+        filename: "Qwen3-Embedding-4B-Q4_K_M.gguf",
+    },
+    ModelEntry {
+        repo: "Fastiraz/Qwen3-Embedding-8B-GGUF",
+        filename: "Qwen3-Embedding-8B-Q4_K_M.gguf",
+    },
+    ModelEntry {
         repo: "Fastiraz/Ornith-1.0-9B-GGUF",
         filename: "ornith-1.0-9b-Q4_K_M.gguf",
     },
