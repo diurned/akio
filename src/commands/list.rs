@@ -20,6 +20,8 @@ pub fn list(all: bool) -> Result<()> {
         }
         let mut found = false;
         for entry in crate::models::WHITELISTED_MODELS {
+            // FIXME: Image generation models lack filenames, which causes them
+            // to appear in the `akio list` even when they are not downloaded.
             let path = dir.join(entry.filename);
             if path.exists() {
                 if !found {
