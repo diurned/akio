@@ -56,7 +56,7 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
         filename: "ornith-1.0-35b-Q4_K_M.gguf",
     },
     ModelEntry {
-        repo: "Tongyi-MAI/Z-Image-Turbo",
+        repo: "Fastiraz/Z-Image-Turbo",
         filename: "",
     },
 ];
