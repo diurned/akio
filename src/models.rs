@@ -56,6 +56,22 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
         filename: "ornith-1.0-35b-Q4_K_M.gguf",
     },
     ModelEntry {
+        repo: "Fastiraz/DeepSeek-R1-1.5B-GGUF",
+        filename: "DeepSeek-R1-1.5B-Q4_K_M.gguf",
+    },
+    ModelEntry {
+        repo: "Fastiraz/DeepSeek-R1-7B-GGUF",
+        filename: "DeepSeek-R1-7B-Q4_K_M.gguf",
+     },
+    ModelEntry {
+        repo: "Fastiraz/DeepSeek-R1-14B-GGUF",
+        filename: "DeepSeek-R1-14B-Q4_K_M.gguf",
+     },
+    ModelEntry {
+        repo: "Fastiraz/DeepSeek-R1-32B-GGUF",
+        filename: "DeepSeek-R1-32B-Q4_K_M.gguf",
+     },
+    ModelEntry {
         repo: "Fastiraz/Z-Image-Turbo",
         filename: "",
     },
