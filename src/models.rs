@@ -3,76 +3,94 @@ use std::path::PathBuf;
 
 pub struct ModelEntry {
     pub repo: &'static str,
+    pub tags: &'static [&'static str],
     pub filename: &'static str,
 }
 
 pub const WHITELISTED_MODELS: &[ModelEntry] = &[
     ModelEntry {
         repo: "Fastiraz/Qwen3-0.6B-GGUF",
-        filename: "Qwen3-0.6B-Q4_0.gguf",
+        tags: &["Q4_0", "Q8_0", "f16"],
+        filename: "Qwen3-0.6B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3-1.7B-GGUF",
-        filename: "Qwen3-1.7B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q8_0", "f16"],
+        filename: "Qwen3-1.7B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3-4B-GGUF",
-        filename: "Qwen3-4B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q8_0", "f16"],
+        filename: "Qwen3-4B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3-8B-GGUF",
-        filename: "Qwen3-8B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q8_0", "f16"],
+        filename: "Qwen3-8B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3-14B-GGUF",
-        filename: "Qwen3-14B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q8_0", "f16"],
+        filename: "Qwen3-14B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3-32B-GGUF",
-        filename: "Qwen3-32B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q8_0"],
+        filename: "Qwen3-32B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3.5-9B-GGUF",
-        filename: "Qwen3.5-9B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "BF16", "IQ4_NL", "IQ4_XS", "Q3_K_M", "Q3_K_S", "Q4_0", "Q4_1", "Q4_K_S", "Q5_K_M", "Q5_K_S", "Q6_K", "Q8_0", "UD-IQ2_M", "UD-IQ2_XXS", "UD-IQ3_XXS", "UD-Q2_K_XL", "UD-Q3_K_XL", "UD-Q4_K_XL", "UD-Q5_K_XL", "UD-Q6_K_XL", "UD-Q8_K_XL"],
+        filename: "Qwen3.5-9B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3-Embedding-0.6B-GGUF",
-        filename: "Qwen3-Embedding-0.6B-Q8_0.gguf",
+        tags: &["Q8_0", "f16"],
+        filename: "Qwen3-Embedding-0.6B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3-Embedding-4B-GGUF",
-        filename: "Qwen3-Embedding-4B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q5_0", "Q5_K_M", "Q6_K", "Q8_0", "f16"],
+        filename: "Qwen3-Embedding-4B",
     },
     ModelEntry {
         repo: "Fastiraz/Qwen3-Embedding-8B-GGUF",
-        filename: "Qwen3-Embedding-8B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q5_0", "Q5_K_M", "Q6_K", "Q8_0", "f16"],
+        filename: "Qwen3-Embedding-8B",
     },
     ModelEntry {
         repo: "Fastiraz/Ornith-1.0-9B-GGUF",
-        filename: "ornith-1.0-9b-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q5_K_M", "Q6_K", "Q8_0", "bf16"],
+        filename: "ornith-1.0-9b",
     },
     ModelEntry {
         repo: "Fastiraz/Ornith-1.0-35B-GGUF",
-        filename: "ornith-1.0-35b-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "Q5_K_M", "Q6_K", "Q8_0", "bf16"],
+        filename: "ornith-1.0-35b",
     },
     ModelEntry {
         repo: "Fastiraz/DeepSeek-R1-1.5B-GGUF",
-        filename: "DeepSeek-R1-1.5B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "BF16", "Q2_K", "Q2_K_L", "Q3_K_M", "Q5_K_M", "Q6_K", "Q8_0", "UD-IQ1_M", "UD-IQ1_S", "UD-IQ2_M", "UD-IQ2_XXS", "UD-IQ3_XXS", "UD-IQ4_XS", "UD-Q2_K_XL", "UD-Q3_K_XL", "UD-Q4_K_XL"],
+        filename: "DeepSeek-R1-1.5B",
     },
     ModelEntry {
         repo: "Fastiraz/DeepSeek-R1-7B-GGUF",
-        filename: "DeepSeek-R1-7B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "F16", "Q2_K", "Q2_K_L", "Q3_K_M", "Q5_K_M", "Q6_K", "Q8_0"],
+        filename: "DeepSeek-R1-7B",
      },
     ModelEntry {
         repo: "Fastiraz/DeepSeek-R1-14B-GGUF",
-        filename: "DeepSeek-R1-14B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "F16", "Q2_K", "Q2_K_L", "Q3_K_M", "Q5_K_M", "Q6_K", "Q8_0"],
+        filename: "DeepSeek-R1-14B",
      },
     ModelEntry {
         repo: "Fastiraz/DeepSeek-R1-32B-GGUF",
-        filename: "DeepSeek-R1-32B-Q4_K_M.gguf",
+        tags: &["Q4_K_M", "F16", "Q2_K", "Q2_K_L", "Q3_K_M", "Q5_K_M", "Q6_K", "Q8_0"],
+        filename: "DeepSeek-R1-32B",
      },
     ModelEntry {
         repo: "Fastiraz/Z-Image-Turbo",
+        tags: &[],
         filename: "",
     },
 ];
@@ -118,9 +136,17 @@ pub fn resolve_model(name: &str) -> PathBuf {
     }
 
     // If it looks like a HuggingFace repo (contains '/'), resolve to filename
-    if let Some(entry) = find_by_repo(name) {
+    let mut repo: Vec<_> = if name.contains(":") {
+        name.split(":").collect()
+    } else {
+        vec![name]
+    };
+    if let Some(entry) = find_by_repo(repo[0]) {
+        if repo.len() < 2 {
+            repo.push(entry.tags[0]);
+        }
         if !entry.filename.is_empty() {
-            return model_path(entry.filename);
+            return model_path(format!("{}-{}.gguf", entry.filename, repo[1]).as_str());
         }
         return model_repo_dir(entry.repo);
     }

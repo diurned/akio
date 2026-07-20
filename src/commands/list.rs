@@ -1,5 +1,7 @@
 use anyhow::Result;
 
+
+// TODO: Add tags in table
 pub fn list(all: bool) -> Result<()> {
     if all {
         // Show every model in the registry, marking which are downloaded.
