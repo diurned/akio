@@ -26,7 +26,7 @@ Akio is a **plug-and-play autonomous AI agent** with **embedded model inference*
 ## Roadmap features
 
 - [x] LLM inference
-- [x] Default tools (shell, read, write, glob, and websearch)
+- [x] Default tools (shell, read, write, glob, fetch and websearch)
 - [x] MCP
 - [ ] API
 - [ ] Orchestrator
