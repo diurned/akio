@@ -221,10 +221,8 @@ fn build_prompt(
         owned.push((role_cs, content_cs));
     }
 
-    let formatted = apply_template(tmpl, &c_messages, true).unwrap_or_else(|e| {
-        eprintln!("{e}");
-        std::process::exit(1);
-    });
+    let formatted = apply_template(tmpl, &c_messages, true)
+        .map_err(|e| anyhow::anyhow!(e))?;
 
     let new_len = formatted.iter().position(|&b| b == 0).unwrap_or(formatted.len()) as i32;
     let prompt_str = String::from_utf8_lossy(&formatted[prev_len as usize..new_len as usize]).into_owned();
@@ -359,6 +357,94 @@ fn build_mcp_tools_prompt(mcp_tools: &[McpToolInfo]) -> String {
     format!("\n\n# MCP server tools\n\n{tools_str}")
 }
 
+/// Clamps the requested GPU layer count down to what should fit in free
+/// device memory, using only the model file's on-disk size and a backend
+/// memory query — deliberately NOT touching llama.cpp's model loader.
+///
+/// An earlier version of this function did a "probe load" with
+/// `no_alloc = true` to get an exact tensor byte count and layer count
+/// straight from llama.cpp. That hits `GGML_ASSERT(!ml.no_alloc)` inside
+/// `load_tensors()` on current llama.cpp — `no_alloc` isn't a supported way
+/// to stop `llama_model_load_from_file` short of actually loading tensors,
+/// despite what the field's doc-comment suggests. Rather than guess at the
+/// undocumented "correct" way to invoke it, this version avoids the model
+/// loader entirely, so it can't hit that (or a similar) assertion:
+///
+/// - model size comes from `std::fs::metadata`, not from llama.cpp
+/// - free device memory comes from `ggml_backend_dev_memory`, which is pure
+///   hardware introspection and has no per-model state to violate
+///
+/// The tradeoff is precision: file size is a proxy for in-memory footprint
+/// (close enough for mmap'd, roughly-contiguous GGUF weights, but not
+/// exact), and without a real layer count, a partial fit is estimated by
+/// scaling the request rather than counting exact layers. Context-size
+/// auto-clamping has been dropped for now rather than built on the same
+/// kind of guesswork that just broke here — flash attention + the Q8_0 KV
+/// cache below already cut KV memory substantially, but if you still see
+/// context-related OOM after this, lower `--n-ctx` manually for now.
+fn fit_to_available_memory(model_path: &str, requested_gpu_layers: i32) -> i32 {
+    let model_bytes = match std::fs::metadata(model_path) {
+        Ok(meta) => meta.len(),
+        Err(_) => return requested_gpu_layers, // let the real load report the error
+    };
+
+    // Find the first GPU-ish device (covers both discrete GPUs and Apple
+    // Silicon's integrated/unified-memory Metal device) and read its free
+    // memory.
+    let mut free_bytes: Option<u64> = None;
+    unsafe {
+        for i in 0..ggml_backend_dev_count() {
+            let dev = ggml_backend_dev_get(i);
+            let kind = ggml_backend_dev_type(dev);
+            if kind == ggml_backend_dev_type_GGML_BACKEND_DEVICE_TYPE_GPU || kind == ggml_backend_dev_type_GGML_BACKEND_DEVICE_TYPE_IGPU {
+                let mut free = 0usize;
+                let mut total = 0usize;
+                ggml_backend_dev_memory(dev, &mut free, &mut total);
+                free_bytes = Some(free as u64);
+                break;
+            }
+        }
+    }
+
+    let Some(free) = free_bytes else {
+        return requested_gpu_layers; // no GPU-ish device found — nothing to clamp
+    };
+
+    const SAFETY_MARGIN: u64 = 1024 * 1024 * 1024; // keep 1 GiB free for scratch/compute buffers
+    let budget = free.saturating_sub(SAFETY_MARGIN);
+
+    if budget >= model_bytes {
+        return requested_gpu_layers; // whole model should fit as requested
+    }
+
+    if requested_gpu_layers < 0 {
+        // "offload everything" was requested but the whole model doesn't
+        // fit, and there's no layer count to split it by — fail safe to
+        // CPU rather than guess a specific layer count.
+        eprintln!(
+            "warning: model (~{} MiB) likely won't fit in ~{} MiB free device memory; falling back to CPU-only",
+            model_bytes / (1024 * 1024),
+            free / (1024 * 1024)
+        );
+        return 0;
+    }
+
+    // Scale the requested layer count down by roughly how much of the model
+    // fits. This assumes weights are ~evenly sized across layers, which is
+    // an approximation (embedding/output layers are often larger), not an
+    // exact fit — but it fails toward "less GPU memory used", which is the
+    // safe direction.
+    let ratio = (budget as f64 / model_bytes as f64).clamp(0.0, 1.0);
+    let adjusted = ((requested_gpu_layers as f64) * ratio).floor() as i32;
+    if adjusted < requested_gpu_layers {
+        eprintln!(
+            "warning: {requested_gpu_layers} GPU layers requested but only ~{} MiB free; offloading ~{adjusted} layers instead",
+            free / (1024 * 1024)
+        );
+    }
+    adjusted.max(0)
+}
+
 pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i32, verbose: &str, prompt: Option<&str>) -> Result<()> {
     llama_log::set_min_level(crate::utils::log::parse_log_level(verbose));
     unsafe { llama_log_set(Some(llama_log::log_callback), std::ptr::null_mut()) };
@@ -383,11 +469,37 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i3
     //     true
     // }
 
+    let c_path = CString::new(model_path).expect("model path contains null byte");
+
+    // Crash prevention: clamp the requested GPU layers down to what will
+    // actually fit in free device memory before attempting the real load.
+    // See fit_to_available_memory() for why this only uses file size + a
+    // backend memory query rather than probing through llama.cpp itself.
+    let n_gpu_layers = fit_to_available_memory(model_path, n_gpu_layers);
+
     let mut model_params = unsafe { llama_model_default_params() };
     model_params.n_gpu_layers = n_gpu_layers;
     model_params.progress_callback = None; // Some(progress_cb);
 
-    let c_path = CString::new(model_path).expect("model path contains null byte");
+    let mut ctx_params = unsafe { llama_context_default_params() };
+    ctx_params.n_ctx = n_ctx;
+    ctx_params.n_batch = b_ctx;
+
+    // Performance: flash attention + quantized KV cache cut memory traffic
+    // per token and roughly halve KV cache size; quantized K/V requires
+    // flash attention to be on.
+    ctx_params.flash_attn_type = llama_flash_attn_type_LLAMA_FLASH_ATTN_TYPE_ENABLED;
+    ctx_params.type_k = ggml_type_GGML_TYPE_Q8_0;
+    ctx_params.type_v = ggml_type_GGML_TYPE_Q8_0;
+
+    // Performance: use all available CPU threads instead of the library's
+    // conservative built-in default.
+    let n_threads = std::thread::available_parallelism()
+        .map(|n| n.get() as i32)
+        .unwrap_or(4);
+    ctx_params.n_threads = n_threads;
+    ctx_params.n_threads_batch = n_threads;
+
     let raw_model = unsafe { llama_model_load_from_file(c_path.as_ptr(), model_params) };
     if raw_model.is_null() {
         bail!("unable to load model: {}", model_path);
@@ -395,10 +507,6 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i3
     let model = Model(raw_model);
 
     let vocab = unsafe { llama_model_get_vocab(model.0) };
-
-    let mut ctx_params = unsafe { llama_context_default_params() };
-    ctx_params.n_ctx = n_ctx;
-    ctx_params.n_batch = b_ctx;
 
     let raw_ctx = unsafe { llama_init_from_model(model.0, ctx_params) };
     if raw_ctx.is_null() {
