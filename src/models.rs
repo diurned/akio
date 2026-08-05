@@ -77,17 +77,23 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
         repo: "Fastiraz/DeepSeek-R1-7B-GGUF",
         tags: &["Q4_K_M", "F16", "Q2_K", "Q2_K_L", "Q3_K_M", "Q5_K_M", "Q6_K", "Q8_0"],
         filename: "DeepSeek-R1-7B",
-     },
+    },
     ModelEntry {
         repo: "Fastiraz/DeepSeek-R1-14B-GGUF",
         tags: &["Q4_K_M", "F16", "Q2_K", "Q2_K_L", "Q3_K_M", "Q5_K_M", "Q6_K", "Q8_0"],
         filename: "DeepSeek-R1-14B",
-     },
+    },
     ModelEntry {
         repo: "Fastiraz/DeepSeek-R1-32B-GGUF",
         tags: &["Q4_K_M", "F16", "Q2_K", "Q2_K_L", "Q3_K_M", "Q5_K_M", "Q6_K", "Q8_0"],
         filename: "DeepSeek-R1-32B",
-     },
+    },
+    ModelEntry {
+        repo: "Fastiraz/Qwythos-9B-v2-GGUF",
+        tags: &["Q4_K_M", "BF16", "Q5_K_M", "Q6_K", "Q8_0"],
+        // NOTE: Later we'll need to support MTP with Qwythos-9B-v2-MTP
+        filename: "Qwythos-9B-v2",
+    },
     ModelEntry {
         repo: "Fastiraz/Z-Image-Turbo",
         tags: &[],
