@@ -23,7 +23,7 @@ pub enum Model {
 impl Model {
     pub fn repo(&self) -> &'static str {
         match self {
-            Self::Turbo => "Tongyi-MAI/Z-Image-Turbo",
+            Self::Turbo => "Fastiraz/Z-Image-Turbo",
         }
     }
 
