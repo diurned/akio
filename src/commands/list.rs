@@ -6,12 +6,12 @@ pub fn list(all: bool) -> Result<()> {
     if all {
         // Show every model in the registry, marking which are downloaded.
         let dir = crate::models::models_dir();
-        println!("{:<40} {:<30} {}", "REPO", "FILE", "STATUS");
-        println!("{}", "-".repeat(80));
+        println!("{:<30} {:<40} {}", "FILE", "REPO", "STATUS");
+        println!("{}", "-".repeat(78));
         for entry in crate::models::WHITELISTED_MODELS {
             let downloaded = dir.join(entry.filename).exists();
-            let status = if downloaded { "downloaded" } else { "not downloaded" };
-            println!("{:<40} {:<30} {}", entry.repo, entry.filename, status);
+            let status = if downloaded { "\x1b[32m✔\x1b[0m" } else { "\x1b[31m✘\x1b[0m" };
+            println!("{:<30} {:<40} {}", entry.filename, entry.repo, status);
         }
     } else {
         // Show only downloaded models.
@@ -27,11 +27,11 @@ pub fn list(all: bool) -> Result<()> {
             let path = dir.join(entry.filename);
             if path.exists() {
                 if !found {
-                    println!("{:<40} {}", "REPO", "FILE");
+                    println!("{:<30} {:<40}", "FILE", "REPO");
                     println!("{}", "-".repeat(72));
                     found = true;
                 }
-                println!("{:<40} {}", entry.repo, entry.filename);
+                println!("{:<30} {:<40}", entry.filename, entry.repo);
             }
         }
         if !found {
