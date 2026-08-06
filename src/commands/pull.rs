@@ -16,8 +16,19 @@ const Z_IMAGE_FILES: &[&str] = &[
     "vae/diffusion_pytorch_model.safetensors",
 ];
 
+/// Split a model identifier into repo and optional quantization tag.
+/// e.g. "Fastiraz/Qwen3-0.6B-GGUF:Q4_0" -> ("Fastiraz/Qwen3-0.6B-GGUF", Some("Q4_0"))
+fn parse_model_name(name: &str) -> (&str, Option<&str>) {
+    if let Some(pos) = name.find(':') {
+        (&name[..pos], Some(&name[pos + 1..]))
+    } else {
+        (name, None)
+    }
+}
+
 pub async fn pull(name: &str) -> Result<()> {
-    let entry = crate::models::find_by_any(name).ok_or_else(|| {
+    let (repo, tag) = parse_model_name(name);
+    let entry = crate::models::find_by_repo(repo).ok_or_else(|| {
         let list = crate::models::WHITELISTED_MODELS
             .iter()
             .map(|m| format!("  {}  ({})", m.repo, m.filename))
@@ -26,21 +37,28 @@ pub async fn pull(name: &str) -> Result<()> {
         anyhow::anyhow!("'{}' is not in the model whitelist.\n\nAvailable models:\n{}", name, list)
     })?;
 
+    // Resolve the quantization tag
+    let tag = tag.or_else(|| {
+        // No tag specified — use the first available quantization
+        entry.tags.first().copied()
+    }).unwrap_or("Q4_K_M"); // fallback: most common quantization
+
     // Multi-file model (e.g. Z-Image-Turbo): filename is empty
     if entry.filename.is_empty() {
         return pull_multi_file(entry.repo).await;
     }
 
-    let dest = crate::models::model_path(entry.filename);
+    let filename = format!("{}-{}.gguf", entry.filename, tag);
+    let dest = crate::models::model_path(&filename);
     if dest.exists() {
-        println!("'{}' is already downloaded at {}", entry.filename, dest.display());
+        println!("'{}' is already downloaded at {}", filename, dest.display());
         return Ok(());
     }
 
     std::fs::create_dir_all(crate::models::models_dir())
         .context("failed to create models directory")?;
 
-    println!("Pulling {}/{} ...", entry.repo, entry.filename);
+    println!("Pulling {}/{} ...", entry.repo, filename);
 
     let api = ApiBuilder::new()
         .build()
@@ -48,9 +66,9 @@ pub async fn pull(name: &str) -> Result<()> {
 
     let cached = api
         .model(entry.repo.to_string())
-        .get(entry.filename)
+        .get(&filename)
         .await
-        .with_context(|| format!("failed to download {}/{}", entry.repo, entry.filename))?;
+        .with_context(|| format!("failed to download {}/{}", entry.repo, filename))?;
 
     std::fs::copy(&cached, &dest)
         .with_context(|| format!("failed to copy model to {}", dest.display()))?;
