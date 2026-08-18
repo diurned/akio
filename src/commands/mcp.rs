@@ -11,7 +11,12 @@ pub async fn list() -> Result<()> {
     }
 
     for entry in &config.servers {
-        println!("{} ({} {})", entry.name, entry.command, entry.args.join(" "));
+        println!(
+            "{} ({} {})",
+            entry.name,
+            entry.command,
+            entry.args.join(" ")
+        );
 
         let mut client = MCPClient::new();
         match client.connect_to_server(&entry.command, &entry.args).await {

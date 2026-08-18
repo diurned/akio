@@ -187,10 +187,7 @@ pub fn run_embedding(
     let n_ctx = unsafe { llama_n_ctx(ctx.0) } as usize;
 
     // Tokenize all inputs upfront.
-    let all_tokens: Vec<Vec<llama_token>> = inputs
-        .iter()
-        .map(|s| tokenize(vocab, s))
-        .collect();
+    let all_tokens: Vec<Vec<llama_token>> = inputs.iter().map(|s| tokenize(vocab, s)).collect();
 
     let n_prompts = all_tokens.len();
     let n_batch = N_BATCH as usize;
@@ -241,7 +238,13 @@ pub fn run_embedding(
         // Flush the current batch if adding this input would overflow it.
         if (batch.0.n_tokens as usize + n_toks > n_batch) || (s >= n_seq_max as i32) {
             unsafe {
-                batch_decode(ctx.0, &batch.0, &mut embeddings[e * n_embd..], n_embd, pooling_type)?;
+                batch_decode(
+                    ctx.0,
+                    &batch.0,
+                    &mut embeddings[e * n_embd..],
+                    n_embd,
+                    pooling_type,
+                )?;
             }
             e += if pooling_type == llama_pooling_type_LLAMA_POOLING_TYPE_NONE {
                 batch.0.n_tokens as usize
@@ -264,7 +267,13 @@ pub fn run_embedding(
     // Decode the final (possibly partial) batch.
     if batch.0.n_tokens > 0 {
         unsafe {
-            batch_decode(ctx.0, &batch.0, &mut embeddings[e * n_embd..], n_embd, pooling_type)?;
+            batch_decode(
+                ctx.0,
+                &batch.0,
+                &mut embeddings[e * n_embd..],
+                n_embd,
+                pooling_type,
+            )?;
         }
     }
 

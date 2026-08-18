@@ -74,11 +74,7 @@ impl MCPClient {
     }
 
     /// Connect to an MCP server by spawning the given command with args.
-    pub async fn connect_to_server(
-        &mut self,
-        command: &str,
-        args: &[String],
-    ) -> Result<Vec<Tool>> {
+    pub async fn connect_to_server(&mut self, command: &str, args: &[String]) -> Result<Vec<Tool>> {
         let args = args.to_vec();
         let transport = TokioChildProcess::new(Command::new(command).configure(move |cmd| {
             for arg in &args {
@@ -99,11 +95,7 @@ impl MCPClient {
     }
 
     /// Call a tool on the connected MCP server.
-    pub async fn call_tool(
-        &self,
-        tool_name: &str,
-        tool_args: serde_json::Value,
-    ) -> Result<String> {
+    pub async fn call_tool(&self, tool_name: &str, tool_args: serde_json::Value) -> Result<String> {
         let session = self
             .session
             .as_ref()

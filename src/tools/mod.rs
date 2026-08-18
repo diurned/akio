@@ -1,13 +1,12 @@
+pub mod fetch;
 pub mod glob;
 pub mod read;
 pub mod shell;
-pub mod write;
 pub mod websearch;
-pub mod fetch;
+pub mod write;
 
 use anyhow::Result;
 use serde_json::Value;
-
 
 pub trait Tool: Send + Sync {
     fn name(&self) -> &str;
@@ -30,7 +29,10 @@ impl ToolRegistry {
     }
 
     pub fn find(&self, name: &str) -> Option<&dyn Tool> {
-        self.tools.iter().find(|t| t.name() == name).map(|t| t.as_ref())
+        self.tools
+            .iter()
+            .find(|t| t.name() == name)
+            .map(|t| t.as_ref())
     }
 }
 
@@ -57,8 +59,7 @@ pub fn build_system_prompt(registry: &ToolRegistry) -> String {
             }
         }));
     }
-    let tools_str = serde_json::to_string_pretty(&tools_json)
-        .unwrap_or_else(|_| "[]".into());
+    let tools_str = serde_json::to_string_pretty(&tools_json).unwrap_or_else(|_| "[]".into());
 
     format!(
         "You are a helpful assistant with access to tools.\n\n\

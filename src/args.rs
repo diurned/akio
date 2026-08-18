@@ -1,17 +1,17 @@
-use clap::{Parser, Subcommand};
 use clap::builder::{
-  styling::{AnsiColor, Effects},
-  Styles,
+    styling::{AnsiColor, Effects},
+    Styles,
 };
+use clap::{Parser, Subcommand};
 
 const STYLES: Styles = Styles::styled()
-  .header(AnsiColor::Green.on_default().effects(Effects::BOLD))
-  .usage(AnsiColor::Green.on_default().effects(Effects::BOLD))
-  .literal(AnsiColor::Cyan.on_default().effects(Effects::BOLD))
-  .placeholder(AnsiColor::Cyan.on_default())
-  .error(AnsiColor::BrightRed.on_default().effects(Effects::BOLD))
-  .valid(AnsiColor::BrightGreen.on_default().effects(Effects::BOLD))
-  .invalid(AnsiColor::BrightRed.on_default().effects(Effects::BOLD));
+    .header(AnsiColor::Green.on_default().effects(Effects::BOLD))
+    .usage(AnsiColor::Green.on_default().effects(Effects::BOLD))
+    .literal(AnsiColor::Cyan.on_default().effects(Effects::BOLD))
+    .placeholder(AnsiColor::Cyan.on_default())
+    .error(AnsiColor::BrightRed.on_default().effects(Effects::BOLD))
+    .valid(AnsiColor::BrightGreen.on_default().effects(Effects::BOLD))
+    .invalid(AnsiColor::BrightRed.on_default().effects(Effects::BOLD));
 
 #[derive(Parser)]
 #[command(
@@ -77,7 +77,7 @@ pub enum Commands {
     },
 
     /// List downloaded models
-    #[clap(alias="ls")]
+    #[clap(alias = "ls")]
     List {
         /// Show all available GGUF files, not just the repository names
         #[arg(long = "all", short = 'a')]
@@ -85,7 +85,7 @@ pub enum Commands {
     },
 
     /// Generate an image from a text prompt (experimental)
-    #[clap(alias="img")]
+    #[clap(alias = "img")]
     Image {
         /// Model to use
         #[arg(short = 'm', long)]
@@ -129,7 +129,7 @@ pub enum Commands {
     },
 
     /// Generate text embeddings from input texts
-    #[clap(alias="embed")]
+    #[clap(alias = "embed")]
     Embedding {
         /// Model name: HuggingFace repo (e.g. Fastiraz/Qwen3-Embedding-0.6B-GGUF) or filename (e.g. Qwen3-Embedding-0.6B-Q8_0.gguf)
         #[arg(short = 'm')]
@@ -158,7 +158,7 @@ pub enum Commands {
 #[derive(Subcommand)]
 pub enum McpAction {
     /// List registered MCP servers and their tools
-    #[clap(alias="ls")]
+    #[clap(alias = "ls")]
     List,
 
     /// Add an MCP server
@@ -177,7 +177,7 @@ pub enum McpAction {
     },
 
     /// Remove a registered MCP server
-    #[clap(alias="rm")]
+    #[clap(alias = "rm")]
     Remove {
         /// Name of the MCP server to remove
         name: String,

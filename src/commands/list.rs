@@ -1,7 +1,6 @@
 use anyhow::Result;
 use std::path::Path;
 
-
 // TODO: Add tags in table
 pub fn list(all: bool) -> Result<()> {
     if all {
@@ -16,7 +15,12 @@ pub fn list(all: bool) -> Result<()> {
             } else {
                 "\x1b[31m✘\x1b[0m"
             };
-            println!("{:<30} {:<40} {}", filename.unwrap_or_else(|| entry.filename.to_string()), entry.repo, status);
+            println!(
+                "{:<30} {:<40} {}",
+                filename.unwrap_or_else(|| entry.filename.to_string()),
+                entry.repo,
+                status
+            );
         }
     } else {
         // Show only downloaded models.

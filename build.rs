@@ -38,19 +38,40 @@ fn main() {
 
     // Tell cargo where to find the built library
     println!("cargo:rustc-link-search=native={}/build", dst.display());
-    println!("cargo:rustc-link-search=native={}/build/ggml/src", dst.display());
-    println!("cargo:rustc-link-search=native={}/build/ggml/src/ggml-blas", dst.display());
-    println!("cargo:rustc-link-search=native={}/build/ggml/src/ggml-metal", dst.display());
-    println!("cargo:rustc-link-search=native={}/build/ggml/src/ggml-cuda", dst.display());
+    println!(
+        "cargo:rustc-link-search=native={}/build/ggml/src",
+        dst.display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}/build/ggml/src/ggml-blas",
+        dst.display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}/build/ggml/src/ggml-metal",
+        dst.display()
+    );
+    println!(
+        "cargo:rustc-link-search=native={}/build/ggml/src/ggml-cuda",
+        dst.display()
+    );
     println!("cargo:rustc-link-search=native={}/build/src", dst.display());
 
     // On MSVC, cmake places artifacts in a configuration subdirectory.
     // We always build in Release mode on MSVC (see above).
     #[cfg(target_env = "msvc")]
     {
-        println!("cargo:rustc-link-search=native={}/build/Release", dst.display());
-        println!("cargo:rustc-link-search=native={}/build/ggml/src/Release", dst.display());
-        println!("cargo:rustc-link-search=native={}/build/src/Release", dst.display());
+        println!(
+            "cargo:rustc-link-search=native={}/build/Release",
+            dst.display()
+        );
+        println!(
+            "cargo:rustc-link-search=native={}/build/ggml/src/Release",
+            dst.display()
+        );
+        println!(
+            "cargo:rustc-link-search=native={}/build/src/Release",
+            dst.display()
+        );
     }
 
     // Link llama and ggml
@@ -212,7 +233,10 @@ fn setup_libclang_path() {
 #[cfg(windows)]
 fn find_libclang_dir() -> Option<PathBuf> {
     // 1. Look next to clang.exe found on PATH
-    if let Ok(out) = std::process::Command::new("where.exe").arg("clang.exe").output() {
+    if let Ok(out) = std::process::Command::new("where.exe")
+        .arg("clang.exe")
+        .output()
+    {
         if let Ok(s) = std::str::from_utf8(&out.stdout) {
             for line in s.lines() {
                 let clang = PathBuf::from(line.trim());
@@ -343,11 +367,9 @@ fn find_libclang_dir() -> Option<PathBuf> {
 fn has_libclang(dir: &PathBuf) -> bool {
     std::fs::read_dir(dir)
         .map(|entries| {
-            entries.flatten().any(|e| {
-                e.file_name()
-                    .to_string_lossy()
-                    .starts_with("libclang")
-            })
+            entries
+                .flatten()
+                .any(|e| e.file_name().to_string_lossy().starts_with("libclang"))
         })
         .unwrap_or(false)
 }

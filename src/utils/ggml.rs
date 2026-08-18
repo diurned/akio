@@ -1,7 +1,6 @@
 use super::gguf::{parse_gguf, GgufMeta};
 use super::memory::get_mem_info;
 
-
 fn fmt_bytes(b: u64) -> String {
     const GIB: u64 = 1024 * 1024 * 1024;
     const MIB: u64 = 1024 * 1024;
@@ -39,7 +38,8 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
 
     let bpe = kv_bytes_per_element("f16");
 
-    let kv_per_layer = (context.saturating_mul(emb_head_k.saturating_add(emb_head_v))
+    let kv_per_layer = (context
+        .saturating_mul(emb_head_k.saturating_add(emb_head_v))
         .saturating_mul(heads_kv)) as f64
         * bpe;
     let kv_cache = (kv_per_layer * blocks as f64) as u64;
@@ -47,18 +47,18 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
     let graph: u64 = match meta.architecture().as_str() {
         "llama" | "llama4" => {
             let base = std::cmp::max(
+                4u64.saturating_mul(batch).saturating_mul(
+                    1u64.saturating_add(4 * embedding)
+                        .saturating_add(context.saturating_mul(1u64.saturating_add(heads))),
+                ),
                 4u64.saturating_mul(batch)
-                    .saturating_mul(1u64.saturating_add(4 * embedding).saturating_add(
-                        context.saturating_mul(1u64.saturating_add(heads)),
-                    )),
-                4u64.saturating_mul(batch).saturating_mul(embedding.saturating_add(vocab)),
+                    .saturating_mul(embedding.saturating_add(vocab)),
             );
             // Mixtral 8×22B
             if meta.find_tensor("blk.0.ffn_gate_exps.weight").is_some() {
                 let ff = meta.feed_forward_length();
-                4u64.saturating_mul(batch).saturating_mul(
-                    2 * ff + heads_kv + embedding + context + emb_head_k * heads_kv,
-                )
+                4u64.saturating_mul(batch)
+                    .saturating_mul(2 * ff + heads_kv + embedding + context + emb_head_k * heads_kv)
             // Mixtral 8×7B
             } else if let Some(t) = meta.find_tensor("blk.0.ffn_gate.0.weight") {
                 let ff1 = t.dim1();
@@ -78,7 +78,8 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
 
         // Qwen2 / Qwen3 (same arch key in llama.cpp)
         "qwen2" | "qwen3" | "qwen25" => std::cmp::max(
-            4u64.saturating_mul(batch).saturating_mul(embedding.saturating_add(vocab)),
+            4u64.saturating_mul(batch)
+                .saturating_mul(embedding.saturating_add(vocab)),
             4u64.saturating_mul(batch).saturating_mul(
                 1u64.saturating_add(2 * embedding)
                     .saturating_add(context)
@@ -88,7 +89,8 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
 
         "gemma" | "gemma2" | "gemma3" | "gemma3n" => {
             let base = std::cmp::max(
-                4u64.saturating_mul(batch).saturating_mul(embedding.saturating_add(vocab)),
+                4u64.saturating_mul(batch)
+                    .saturating_mul(embedding.saturating_add(vocab)),
                 4u64.saturating_mul(batch).saturating_mul(
                     2u64.saturating_add(context)
                         .saturating_add(context.saturating_mul(heads))
@@ -96,11 +98,16 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
                         .saturating_add(2 * emb_head_k * heads),
                 ),
             );
-            if meta.architecture() == "gemma3n" { base.saturating_mul(4) } else { base }
+            if meta.architecture() == "gemma3n" {
+                base.saturating_mul(4)
+            } else {
+                base
+            }
         }
 
         "phi2" => std::cmp::max(
-            4u64.saturating_mul(batch).saturating_mul(embedding.saturating_add(vocab)),
+            4u64.saturating_mul(batch)
+                .saturating_mul(embedding.saturating_add(vocab)),
             4u64.saturating_mul(batch).saturating_mul(
                 1u64.saturating_add(4 * embedding)
                     .saturating_add(context)
@@ -108,12 +115,15 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
             ),
         ),
 
-        "stablelm" => 4u64
-            .saturating_mul(batch)
-            .saturating_mul(context.saturating_mul(1 + heads).saturating_add(3 * embedding + 2)),
+        "stablelm" => 4u64.saturating_mul(batch).saturating_mul(
+            context
+                .saturating_mul(1 + heads)
+                .saturating_add(3 * embedding + 2),
+        ),
 
         "command-r" => std::cmp::max(
-            4u64.saturating_mul(batch).saturating_mul(embedding.saturating_add(vocab)),
+            4u64.saturating_mul(batch)
+                .saturating_mul(embedding.saturating_add(vocab)),
             4u64.saturating_mul(batch).saturating_mul(
                 2u64.saturating_add(4 * embedding)
                     .saturating_add(context.saturating_mul(1u64.saturating_add(heads))),
@@ -121,7 +131,8 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
         ),
 
         "deepseek2" => std::cmp::max(
-            4u64.saturating_mul(batch).saturating_mul(3 * embedding + vocab),
+            4u64.saturating_mul(batch)
+                .saturating_mul(3 * embedding + vocab),
             4u64.saturating_mul(batch).saturating_mul(
                 3u64.saturating_mul(embedding)
                     .saturating_add(2)
@@ -130,7 +141,9 @@ pub fn graph_size(meta: &GgufMeta, context: u64, batch: u64) -> (u64, u64) {
             ),
         ),
 
-        "chatglm" => 4u64.saturating_mul(batch).saturating_mul(embedding.saturating_add(vocab)),
+        "chatglm" => 4u64
+            .saturating_mul(batch)
+            .saturating_mul(embedding.saturating_add(vocab)),
 
         _ => {
             // fallback: rough activation buffer
@@ -181,9 +194,7 @@ pub fn estimate_memory(path: &str, context_size: u32) -> Result<u64, String> {
     // );
 
     // working memory = kv cache + graph + overhead (weights are mmap'd)
-    Ok(kv_cache
-        .saturating_add(graph)
-        .saturating_add(overhead))
+    Ok(kv_cache.saturating_add(graph).saturating_add(overhead))
 }
 
 /// Returns Err (with an eprintln) if the estimated requirement exceeds available RAM.

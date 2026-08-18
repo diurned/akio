@@ -151,12 +151,10 @@ pub fn run(args: Args) -> Result<()> {
     let transformer_weights = {
         let files: Vec<std::path::PathBuf> = (1..=3)
             .map(|i| {
-                model_dir
-                    .join("transformer")
-                    .join(format!(
-                        "diffusion_pytorch_model-{:05}-of-00003.safetensors",
-                        i
-                    ))
+                model_dir.join("transformer").join(format!(
+                    "diffusion_pytorch_model-{:05}-of-00003.safetensors",
+                    i
+                ))
             })
             .filter(|p| p.exists())
             .collect();

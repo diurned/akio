@@ -34,14 +34,20 @@ pub async fn pull(name: &str) -> Result<()> {
             .map(|m| format!("  {}  ({})", m.repo, m.filename))
             .collect::<Vec<_>>()
             .join("\n");
-        anyhow::anyhow!("'{}' is not in the model whitelist.\n\nAvailable models:\n{}", name, list)
+        anyhow::anyhow!(
+            "'{}' is not in the model whitelist.\n\nAvailable models:\n{}",
+            name,
+            list
+        )
     })?;
 
     // Resolve the quantization tag
-    let tag = tag.or_else(|| {
-        // No tag specified — use the first available quantization
-        entry.tags.first().copied()
-    }).unwrap_or("Q4_K_M"); // fallback: most common quantization
+    let tag = tag
+        .or_else(|| {
+            // No tag specified — use the first available quantization
+            entry.tags.first().copied()
+        })
+        .unwrap_or("Q4_K_M"); // fallback: most common quantization
 
     // Multi-file model (e.g. Z-Image-Turbo): filename is empty
     if entry.filename.is_empty() {

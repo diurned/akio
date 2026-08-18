@@ -77,7 +77,11 @@ impl WebSearchTool {
             if let (Some(title), Some(raw_url), Some(snippet)) = (title, raw_url, snippet) {
                 let url = extract_url(&raw_url);
                 if !title.is_empty() && !url.is_empty() && !snippet.is_empty() {
-                    results.push(SearchResult { title, url, snippet });
+                    results.push(SearchResult {
+                        title,
+                        url,
+                        snippet,
+                    });
                 }
             }
         }
@@ -117,9 +121,7 @@ impl Tool for WebSearchTool {
             .as_str()
             .ok_or_else(|| anyhow!("missing required argument: query"))?;
 
-        let num_results = args["num_results"]
-            .as_u64()
-            .unwrap_or(2) as usize;
+        let num_results = args["num_results"].as_u64().unwrap_or(2) as usize;
 
         let results = self.search(query, num_results)?;
 

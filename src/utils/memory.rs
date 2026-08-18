@@ -59,10 +59,16 @@ pub fn get_mem_info() -> Result<MemInfo, String> {
         let mut parts = line.split_whitespace();
         match parts.next() {
             Some("MemTotal:") => {
-                total = parts.next().and_then(|v| v.parse::<u64>().ok()).map(|kb| kb * 1024);
+                total = parts
+                    .next()
+                    .and_then(|v| v.parse::<u64>().ok())
+                    .map(|kb| kb * 1024);
             }
             Some("MemAvailable:") => {
-                available = parts.next().and_then(|v| v.parse::<u64>().ok()).map(|kb| kb * 1024);
+                available = parts
+                    .next()
+                    .and_then(|v| v.parse::<u64>().ok())
+                    .map(|kb| kb * 1024);
             }
             _ => {}
         }
@@ -273,7 +279,11 @@ fn get_mem_info() -> Result<MemInfo, String> {
                     std::ptr::null_mut(),
                     0,
                 );
-                if r2 == 0 { Ok(v32 as u64) } else { Err(format!("sysctl failed for {:?}", std::str::from_utf8(name))) }
+                if r2 == 0 {
+                    Ok(v32 as u64)
+                } else {
+                    Err(format!("sysctl failed for {:?}", std::str::from_utf8(name)))
+                }
             }
         }
     };
@@ -282,8 +292,8 @@ fn get_mem_info() -> Result<MemInfo, String> {
     let page_size = unsafe { sysconf(_SC_PAGESIZE) as u64 };
 
     let total = read_u64(b"hw.physmem\0")?;
-    let free_pages = read_u64(b"vm.stats.vm.v_free_count\0")
-        .or_else(|_| read_u64(b"vm.v_free_count\0"))?;
+    let free_pages =
+        read_u64(b"vm.stats.vm.v_free_count\0").or_else(|_| read_u64(b"vm.v_free_count\0"))?;
     let inactive_pages = read_u64(b"vm.stats.vm.v_inactive_count\0")
         .or_else(|_| read_u64(b"vm.v_inactive_count\0"))
         .unwrap_or(0);
