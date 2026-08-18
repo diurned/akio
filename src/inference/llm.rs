@@ -1,14 +1,13 @@
 use std::ffi::CString;
-use std::os::raw::c_char;
 use std::io::{self, BufRead, Write};
+use std::os::raw::c_char;
 
 use anyhow::{bail, Result};
 
 use crate::ffi::*;
 use crate::mcp::client::{MCPClient, McpConfig};
 use crate::tools;
-use crate::tui::input::Input;
-
+use crate::tui::input::read_input;
 
 struct Model(*mut llama_model);
 
@@ -108,8 +107,7 @@ fn generate(
 ) -> String {
     let mut response = String::new();
 
-    let is_first =
-        unsafe { llama_memory_seq_pos_max(llama_get_memory(ctx.0), 0) == -1 };
+    let is_first = unsafe { llama_memory_seq_pos_max(llama_get_memory(ctx.0), 0) == -1 };
 
     let prompt_tokens = tokenize(vocab, prompt, is_first);
 
@@ -134,9 +132,7 @@ fn generate(
 
         check_ctx(chunk.len() as i32);
 
-        let batch = unsafe {
-            llama_batch_get_one(chunk.as_ptr() as *mut i32, chunk.len() as i32)
-        };
+        let batch = unsafe { llama_batch_get_one(chunk.as_ptr() as *mut i32, chunk.len() as i32) };
         let ret = unsafe { llama_decode(ctx.0, batch) };
         if ret != 0 {
             panic!("failed to decode, ret = {ret}");
@@ -221,18 +217,18 @@ fn build_prompt(
         owned.push((role_cs, content_cs));
     }
 
-    let formatted = apply_template(tmpl, &c_messages, true)
-        .map_err(|e| anyhow::anyhow!(e))?;
+    let formatted = apply_template(tmpl, &c_messages, true).map_err(|e| anyhow::anyhow!(e))?;
 
-    let new_len = formatted.iter().position(|&b| b == 0).unwrap_or(formatted.len()) as i32;
-    let prompt_str = String::from_utf8_lossy(&formatted[prev_len as usize..new_len as usize]).into_owned();
+    let new_len = formatted
+        .iter()
+        .position(|&b| b == 0)
+        .unwrap_or(formatted.len()) as i32;
+    let prompt_str =
+        String::from_utf8_lossy(&formatted[prev_len as usize..new_len as usize]).into_owned();
     Ok((prompt_str, new_len))
 }
 
-fn update_prev_len(
-    tmpl: *const c_char,
-    history: &[(String, String)],
-) -> Result<i32> {
+fn update_prev_len(tmpl: *const c_char, history: &[(String, String)]) -> Result<i32> {
     let mut c_messages: Vec<llama_chat_message> = Vec::new();
     let mut owned: Vec<(CString, CString)> = Vec::new();
     for (role, content) in history {
@@ -308,7 +304,9 @@ async fn execute_tool_calls(
                 Err(e) => format!("error: {e}"),
             }
         } else if let Some(mcp_info) = mcp_tools.iter().find(|t| t.tool_name == call.name) {
-            if let Some((_name, client)) = mcp_clients.iter().find(|(n, _)| *n == mcp_info.server_name) {
+            if let Some((_name, client)) =
+                mcp_clients.iter().find(|(n, _)| *n == mcp_info.server_name)
+            {
                 match client.call_tool(&call.name, call.arguments.clone()).await {
                     Ok(output) => output,
                     Err(e) => format!("error: {e}"),
@@ -352,8 +350,7 @@ fn build_mcp_tools_prompt(mcp_tools: &[McpToolInfo]) -> String {
             }
         }));
     }
-    let tools_str =
-        serde_json::to_string_pretty(&tools_json).unwrap_or_else(|_| "[]".into());
+    let tools_str = serde_json::to_string_pretty(&tools_json).unwrap_or_else(|_| "[]".into());
     format!("\n\n# MCP server tools\n\n{tools_str}")
 }
 
@@ -396,7 +393,9 @@ fn fit_to_available_memory(model_path: &str, requested_gpu_layers: i32) -> i32 {
         for i in 0..ggml_backend_dev_count() {
             let dev = ggml_backend_dev_get(i);
             let kind = ggml_backend_dev_type(dev);
-            if kind == ggml_backend_dev_type_GGML_BACKEND_DEVICE_TYPE_GPU || kind == ggml_backend_dev_type_GGML_BACKEND_DEVICE_TYPE_IGPU {
+            if kind == ggml_backend_dev_type_GGML_BACKEND_DEVICE_TYPE_GPU
+                || kind == ggml_backend_dev_type_GGML_BACKEND_DEVICE_TYPE_IGPU
+            {
                 let mut free = 0usize;
                 let mut total = 0usize;
                 ggml_backend_dev_memory(dev, &mut free, &mut total);
@@ -445,7 +444,14 @@ fn fit_to_available_memory(model_path: &str, requested_gpu_layers: i32) -> i32 {
     adjusted.max(0)
 }
 
-pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i32, verbose: &str, prompt: Option<&str>) -> Result<()> {
+pub async fn run_chat(
+    model_path: &str,
+    n_ctx: u32,
+    b_ctx: u32,
+    n_gpu_layers: i32,
+    verbose: &str,
+    prompt: Option<&str>,
+) -> Result<()> {
     llama_log::set_min_level(crate::utils::log::parse_log_level(verbose));
     unsafe { llama_log_set(Some(llama_log::log_callback), std::ptr::null_mut()) };
 
@@ -544,13 +550,20 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i3
                 mcp_clients.push((entry.name.clone(), client));
             }
             Err(e) => {
-                eprintln!("warning: could not connect to MCP server '{}': {e}", entry.name);
+                eprintln!(
+                    "warning: could not connect to MCP server '{}': {e}",
+                    entry.name
+                );
             }
         }
     }
 
     let mcp_prompt_section = build_mcp_tools_prompt(&mcp_tools);
-    let system_prompt = format!("{}{}", tools::build_system_prompt(&registry), mcp_prompt_section);
+    let system_prompt = format!(
+        "{}{}",
+        tools::build_system_prompt(&registry),
+        mcp_prompt_section
+    );
 
     let mut history: Vec<(String, String)> = Vec::new();
 
@@ -573,7 +586,14 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i3
             if tool_calls.is_empty() {
                 break;
             }
-            execute_tool_calls(&tool_calls, &registry, &mcp_tools, &mcp_clients, &mut history).await;
+            execute_tool_calls(
+                &tool_calls,
+                &registry,
+                &mcp_tools,
+                &mcp_clients,
+                &mut history,
+            )
+            .await;
         }
 
         println!();
@@ -585,7 +605,7 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i3
     }
 
     'outer: loop {
-        let user_input = match Input::read_input() {
+        let user_input = match read_input() {
             Some(s) => s,
             None => break,
         };
@@ -658,7 +678,14 @@ pub async fn run_chat(model_path: &str, n_ctx: u32, b_ctx: u32, n_gpu_layers: i3
             if tool_calls.is_empty() {
                 break;
             }
-            execute_tool_calls(&tool_calls, &registry, &mcp_tools, &mcp_clients, &mut history).await;
+            execute_tool_calls(
+                &tool_calls,
+                &registry,
+                &mcp_tools,
+                &mcp_clients,
+                &mut history,
+            )
+            .await;
         }
 
         continue 'outer;
