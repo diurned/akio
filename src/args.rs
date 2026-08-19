@@ -18,7 +18,7 @@ const STYLES: Styles = Styles::styled()
     styles = STYLES,
     name = "akio",
     about = "Local autonomous AI agent with embedded model inference.",
-    long_about = "Never depends on a model provider or Google a command again.\nAkio is a plug-and-play autonomous AI agent that can assist you.\n\n\
+    long_about = "Never depends on a model provider or Google a command again.\nAkio is a plug-and-play autonomous AI agent that can assist you on anything.\n\n\
       EXAMPLES:
         akio pull Fastiraz/Qwen3-0.6B-GGUF
         akio run -m Fastiraz/Qwen3-0.6B-GGUF -c 8192
