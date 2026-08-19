@@ -21,6 +21,8 @@ impl Highlighter for CommandHighlighter {
                 .any(|c| c == line || c.starts_with(line));
             let color = if is_known { Color::Green } else { Color::Red };
             styled.push((Style::new().fg(color), line.to_string()));
+        } else if line.starts_with("!") {
+            styled.push((Style::new().fg(Color::Yellow), line.to_string()));
         } else {
             styled.push((Style::new(), line.to_string()));
         }
