@@ -637,11 +637,13 @@ pub async fn run_chat(
                 }
             }
         } else if user_input.starts_with('!') {
-            let output = std::process::Command::new("sh")
-                .arg("-c")
-                .arg(&user_input[1..])
-                .output()
-                .expect("failed to execute");
+            let output = std::process::Command::new(
+                std::env::var("SHELL").unwrap_or_else(|_| "sh".to_string()),
+            )
+            .arg("-c")
+            .arg(&user_input[1..])
+            .output()
+            .expect("failed to execute");
             let stdout = String::from_utf8_lossy(&output.stdout);
             let stderr = String::from_utf8_lossy(&output.stderr);
 
