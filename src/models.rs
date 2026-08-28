@@ -91,6 +91,21 @@ pub const WHITELISTED_MODELS: &[ModelEntry] = &[
         filename: "ornith-1.0-35b",
     },
     ModelEntry {
+        repo: "Fastiraz/Ornith-1.5-9B-GGUF",
+        tags: &["Q4_K_M", "Q5_K_M", "Q6_K", "Q8_0", "BF16"],
+        filename: "Ornith-1.5-9B",
+    },
+    ModelEntry {
+        repo: "Fastiraz/Ornith-1.5-35B-A3B-GGUF",
+        tags: &["Q4_K_M", "Q5_K_M", "Q6_K", "Q8_0", "BF16"],
+        filename: "Ornith-1.5-35B",
+    },
+    ModelEntry {
+        repo: "Fastiraz/Ornith-1.5-397B-GGUF",
+        tags: &["Q4_K_M", "Q5_K_M", "Q6_K", "Q8_0"],
+        filename: "Ornith-1.5-397B",
+    },
+    ModelEntry {
         repo: "Fastiraz/DeepSeek-R1-1.5B-GGUF",
         tags: &[
             "Q4_K_M",
