@@ -67,6 +67,7 @@ pub async fn pull(name: &str) -> Result<()> {
     println!("Pulling {}/{} ...", entry.repo, filename);
 
     let api = ApiBuilder::new()
+        .with_cache_dir(crate::models::models_cache_dir())
         .build()
         .context("failed to initialise Hugging Face API")?;
 
@@ -87,6 +88,7 @@ async fn pull_multi_file(repo: &str) -> Result<()> {
     let base_dir = crate::models::model_repo_dir(repo);
 
     let api = ApiBuilder::new()
+        .with_cache_dir(crate::models::models_cache_dir())
         .build()
         .context("failed to initialise Hugging Face API")?;
     let hf_repo = api.model(repo.to_string());

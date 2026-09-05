@@ -188,6 +188,13 @@ pub fn find_by_any(name: &str) -> Option<&'static ModelEntry> {
     find_by_repo(name).or_else(|| find_by_filename(name))
 }
 
+pub fn models_cache_dir() -> PathBuf {
+    let home = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .expect("cannot determine home directory");
+    PathBuf::from(home).join(".akio").join("cache")
+}
+
 pub fn models_dir() -> PathBuf {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
