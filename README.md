@@ -15,6 +15,9 @@
 > If you'd like to contribute, feel free to open a [pull request](https://github.com/Fastiraz/akio/pulls).
 > Found a bug, vulnerability, or something unusual? Please open an [issue](https://github.com/Fastiraz/akio/issues).
 
+> [!NOTE]
+> This project is a complete rebuild after I have been banned from GitHub on [Fastiraz account](https://github.com/Fastiraz/) for no reason.
+
 ---
 
 ## What is Akio?
@@ -37,37 +40,11 @@ Akio is a **plug-and-play autonomous AI agent** with **embedded model inference*
     - [ ] VAD inference
     - [ ] STT inference
     - [ ] TTS inference
-- [x] Image model inference
+- [ ] Image model inference
 - [ ] Video model inference
 
 ---
 
 ## The Grimoire
 
-The Grimoire is the official Akio's documentation. You can read it [here](https://fastiraz.github.io/grimoire/).
-
----
-
-## Installation
-
-### Using cargo (recommend)
-
-```sh
-cargo install --git https://github.com/Fastiraz/akio.git
-```
-
----
-
-## Usage
-
-1. Download your first model
-
-```sh
-akio pull Fastiraz/Qwen3-8B-GGUF
-```
-
-2. Run the model
-
-```sh
-akio run -m Qwen3-8B-Q4_K_M.gguf
-```
+The Grimoire is the contains the official Akio's documentation. You can read it [here](https://diurned.github.io/grimoire/akio).
