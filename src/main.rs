@@ -1,6 +1,7 @@
 mod ffi;
-use crate::ffi::*;
+mod inference;
 
 fn main() {
-    unsafe { ggml_backend_load_all() };
+    let model = "Ornith-1.5-9B-Q4_K_M.gguf";
+    inference::llm::serve(model.to_string());
 }

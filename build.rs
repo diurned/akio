@@ -41,8 +41,9 @@ fn link(dst: PathBuf, cuda: bool) {
 fn bind() {
     let bindings = bindgen::Builder::default()
         .header("llama.cpp/include/llama.h")
-        // .clang_arg("-Illama.cpp/include")
+        .clang_arg("-Illama.cpp/include")
         .clang_arg("-Illama.cpp/ggml/include")
+        .prepend_enum_name(false)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");
