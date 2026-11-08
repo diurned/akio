@@ -36,4 +36,15 @@ pub enum Commands {
         #[arg(short = 'm')]
         model: String,
     },
+
+    /// Serve akio API
+    Serve {
+        /// IP Address for the akio server (default 127.0.0.1)
+        #[arg(short = 'H', default_value = "127.0.0.1")]
+        host: String,
+
+        /// Port for the akio server (default 1337)
+        #[arg(short = 'p', default_value_t = 1337)]
+        port: u16,
+    },
 }
