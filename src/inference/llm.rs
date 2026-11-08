@@ -1,11 +1,8 @@
-#![allow(unused_imports)]
-
 use crate::ffi::*;
 use libc::{self, LC_NUMERIC, free, setlocale, strdup};
 use std::{
-    any::type_name,
     ffi::CString,
-    mem,
+    io::{BufRead, Write},
     os::raw::{c_char, c_void},
     process::exit,
     ptr::{null, null_mut},
@@ -213,9 +210,12 @@ pub fn serve(model_path: String) -> i32 {
 
     loop {
         // get user input
-        print!("\033[32m> \033[0m");
-        let mut user: String = String::new();
+        print!("\x1b[32m> \x1b[0m");
+        std::io::stdout().flush().unwrap();
+
+        let mut user = String::new();
         std::io::stdin()
+            .lock()
             .read_line(&mut user)
             .expect("Failed to read line");
 

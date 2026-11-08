@@ -1,7 +1,13 @@
+mod args;
 mod ffi;
 mod inference;
 
+use args::{Cli, Commands};
+use clap::Parser;
+
 fn main() {
-    let model = "Ornith-1.5-9B-Q4_K_M.gguf";
-    inference::llm::serve(model.to_string());
+    let cli = Cli::parse();
+    match cli.command {
+        Commands::Run { model } => inference::llm::serve(model.to_string()),
+    };
 }
