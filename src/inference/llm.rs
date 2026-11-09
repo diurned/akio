@@ -265,7 +265,7 @@ impl LlamaCpp {
         }
         if new_len < 0 {
             eprintln!("failed to apply the chat template");
-            return 1.to_string();
+            return "failed to apply the chat template".to_string();
         }
 
         // remove previous messages to obtain the prompt to generate the response
@@ -286,7 +286,7 @@ impl LlamaCpp {
         // add the response to the messages
         self.messages.push(llama_chat_message {
             role: c"assistant".as_ptr(),
-            content: unsafe { strdup(CString::new(response).unwrap().as_ptr()) },
+            content: unsafe { strdup(CString::new(response.clone()).unwrap().as_ptr()) },
         });
         self.prev_len = unsafe {
             llama_chat_apply_template(
@@ -300,9 +300,9 @@ impl LlamaCpp {
         };
         if self.prev_len < 0 {
             eprintln!("failed to apply the chat template");
-            return 1.to_string();
+            return "failed to apply the chat template".to_string();
         }
-        return 0.to_string();
+        return response.to_string();
     }
 
     pub fn interactive(&mut self) {
