@@ -46,5 +46,9 @@ pub enum Commands {
         /// Port for the akio server (default 1337)
         #[arg(short = 'p', default_value_t = 1337)]
         port: u16,
+
+        /// Model name: filename (e.g. Qwen3.8-27B-Q4_0.gguf)
+        #[arg(short = 'm')]
+        model: String,
     },
 }

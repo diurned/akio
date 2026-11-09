@@ -11,8 +11,10 @@ async fn main() {
     let cli = Cli::parse();
     match cli.command {
         Commands::Run { model } => {
-            inference::llm::serve(model.to_string());
+            let mut llama_cpp = inference::llm::LlamaCpp::new();
+            llama_cpp.load(model);
+            llama_cpp.interactive();
         }
-        Commands::Serve { host, port } => api::chat::chat(host, port).await,
+        Commands::Serve { host, port, model } => api::chat::chat(host, port, model).await,
     };
 }
